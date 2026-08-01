@@ -1,0 +1,75 @@
+---
+import FlipSentences from '@/shared/ui/FlipSentences.astro'
+import VerifiedBadge from '@/shared/ui/VerifiedBadge.astro'
+import IsometricMark from './IsometricMark.astro'
+import { PROFILE } from '@/entities/profile'
+---
+
+{/*
+  Two columns, two rows. The avatar column spans both and pushes itself to the
+  bottom, so the figure above can be as tall as it likes while the avatar stays
+  locked to the name.
+*/}
+<div
+  class="screen-line-bottom grid grid-cols-[auto_1fr] grid-rows-[1fr_auto] overflow-y-clip border-x border-line"
+>
+  {/*
+    No fixed height — the mark's aspect sets it, which keeps the figure box and
+    the visible banner the same thing. Pinning a height let the box and the
+    artwork disagree, and the caption ended up below the rule.
+  */}
+  {/* Asymmetric padding: generous above so the mark is not crowded by the
+      header, tighter below because the mark deliberately breaks the rule. */}
+  <figure
+    class="relative col-span-2 px-2 pt-8 pb-2 sm:col-span-1 sm:col-start-2 sm:px-4 sm:pt-14 sm:pb-4"
+  >
+    <IsometricMark />
+  </figure>
+
+  {/*
+    Avatar: left column, spans both rows, bottom-aligned.
+
+    Margins are hairline on purpose — the circle should very nearly fill its
+    cell, so the vertical rule reads as the avatar's own edge. A p-2 inset made
+    it look like a small image parked in a large box.
+  */}
+  <div class="flex flex-col sm:row-span-2 sm:row-start-1">
+    <div class="screen-line-top mt-auto shrink-0 border-r border-line">
+      <img
+        src={PROFILE.avatar}
+        alt={PROFILE.fullName}
+        width="176"
+        height="176"
+        loading="eager"
+        decoding="async"
+        class="mx-0.5 my-[3px] size-28 rounded-full bg-muted object-cover select-none sm:size-36"
+        onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'mx-0.5 my-[3px] size-28 sm:size-36 rounded-full bg-muted grid place-items-center font-mono text-2xl text-muted-foreground',textContent:'KY'}))"
+      />
+    </div>
+  </div>
+
+  {/*
+    Name and tagline only — two rows, matching the avatar's height. The
+    "available for work" line used to sit here and made this a three-row stack,
+    which shrank the name's share of the block. It now rides the role in
+    Overview, where it reads as a fact rather than a banner.
+  */}
+  <div class="flex flex-col">
+    <div class="z-1 mt-auto border-t border-line">
+      {/* Row height comes from the 2rem/none line box, matching the reference —
+          extra padding here is what made the name feel small in its block. */}
+      <div class="flex items-center gap-2 py-2 pl-4">
+        <h1 class="-translate-y-px text-[2rem]/none font-medium tracking-tight">
+          {PROFILE.displayName}
+        </h1>
+        <VerifiedBadge />
+      </div>
+
+      {/* Fixed height so a longer tagline never shifts the row as it cycles. */}
+      <FlipSentences
+        sentences={PROFILE.taglines}
+        class="h-12.5 border-t border-line py-1 pl-4 font-mono text-sm text-muted-foreground sm:h-9"
+      />
+    </div>
+  </div>
+</div>

@@ -1,0 +1,21 @@
+---
+import { cn } from '@/shared/lib/cn'
+
+/** Small pill for a technology or keyword. */
+interface Props {
+  class?: string
+}
+
+const { class: className } = Astro.props
+---
+
+<span
+  class={cn(
+    'inline-flex h-6 items-center gap-1.25 rounded-full px-2',
+    'bg-surface font-mono text-xs whitespace-nowrap text-foreground',
+    'inset-ring-1 inset-ring-border retina:inset-ring-[0.5px]',
+    className
+  )}
+>
+  <slot />
+</span>

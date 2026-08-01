@@ -1,0 +1,62 @@
+---
+import Panel from '@/shared/ui/Panel.astro'
+import PanelHeader from '@/shared/ui/PanelHeader.astro'
+import PanelTitle from '@/shared/ui/PanelTitle.astro'
+import { PostItem, getPosts } from '@/entities/post'
+
+const posts = await getPosts()
+const recent = posts.slice(0, 4)
+---
+
+{
+  posts.length > 0 && (
+    <Panel id="blog">
+      <PanelHeader>
+        <PanelTitle id="blog" sup={posts.length}>
+          Writing
+        </PanelTitle>
+      </PanelHeader>
+
+      <div class="relative py-4">
+        {/* Column rules behind the grid, desktop only. */}
+        <div
+          class="pointer-events-none absolute inset-0 -z-1 grid grid-cols-2 gap-4 max-sm:hidden"
+          aria-hidden="true"
+        >
+          <div class="border-r border-line" />
+          <div class="border-l border-line" />
+        </div>
+
+        <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {recent.map((post) => (
+            <li class="max-sm:screen-line-top max-sm:screen-line-bottom sm:nth-[2n+1]:screen-line-top sm:nth-[2n+1]:screen-line-bottom">
+              <PostItem post={post} />
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {posts.length > recent.length && (
+        <div class="screen-line-top flex justify-center py-4">
+          <a
+            href="/blog"
+            class="inline-flex h-8 items-center gap-2 rounded-md bg-muted px-3 text-sm font-medium transition-colors hover:bg-accent"
+          >
+            All posts
+            <svg
+              class="size-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </a>
+        </div>
+      )}
+    </Panel>
+  )
+}

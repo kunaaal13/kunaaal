@@ -1,0 +1,128 @@
+---
+title: BetterNotch
+description: A native macOS app that turns the MacBook notch into a live surface — music, battery, calendar, timers, a file shelf — built as a platform where every feature is a toggleable extension.
+status: building
+featured: true
+order: 1
+period:
+  start: '2026'
+tech: ['Swift 6', 'SwiftUI', 'AppKit', 'macOS']
+---
+
+The notch is dead space. BetterNotch fills it with the things you glance at
+rather than open — what's playing, battery, the next calendar event, a timer, a
+drop tray. One borderless panel above the menu bar, out of the Dock.
+
+Two constraints shaped everything: it has to cost nothing when you aren't
+looking at it, and it has to feel like hardware rather than an app parked on top.
+
+## The performance budget is the spec
+
+| Metric | Budget |
+| --- | --- |
+| CPU, collapsed and idle | 0.0% — zero wakeups beyond system noise |
+| Memory, steady state | under 60 MB resident |
+| Timers while idle | zero |
+
+Every task ends by re-verifying that table. Timers exist only while a HUD is up,
+a break countdown is under a minute away, or the panel is open. Everything else
+is event-driven:
+
+- Power → `IOPSNotification` run-loop source
+- Volume and output device → CoreAudio property listener
+- Calendar → `EKEventStoreChanged`
+- Long-horizon schedules → one `DispatchSourceTimer` with generous leeway, so the
+  OS coalesces the wakeup
+
+Even the music visualiser follows the rule — the four bars are driven by playback
+state, not an audio tap. A real tap costs CPU and a permission prompt to animate
+something nobody reads precisely.
+
+## Everything user-visible is an extension
+
+The core is the platform: state machine, shape, window, gestures, the activity
+and HUD engines, the settings shell. Music, power, audio, calendar, breaks, tray,
+clipboard, weather, timer, privacy and camera mirror are each a `NotchExtension`.
+
+```swift
+protocol NotchExtension: AnyObject {
+    static var manifest: ExtensionManifest { get }
+    init(context: ExtensionContext)
+    func activate() async
+    func deactivate()
+
+    var expandedTab: ExtensionTab? { get }
+    var homeCard: AnyView? { get }
+    var settingsPane: AnyView? { get }
+}
+```
+
+- Tabs, Home cards and the Settings list are **derived** from the registry, so a
+  new feature is one folder plus one registry line.
+- **Disabled means never instantiated** — no listeners, no memory. Toggling
+  activates or deactivates live, no relaunch.
+- `deactivate()` must be *provably* complete: after switching a feature off, the
+  idle budget holds as if it never existed. Much stronger than "stops updating
+  the UI", and it's what stops the app accumulating cost as it grows.
+- `ExtensionContext` is the only door in. Extensions never touch the window or
+  state machine.
+
+## One shape, always morphing
+
+Every state is the same black shape changing size — collapsed, activity, HUD,
+expanded. Never a second panel fading in.
+
+- **The window frame never animates.** The panel is pre-padded larger than max
+  expanded, so only the SwiftUI shape animates. Animating an `NSWindow` frame is
+  visibly jittery; animating a shape is smooth at 120 Hz.
+- All sizes come from `NotchGeometry.size(for: state)`, so the morph is one
+  animatable pair and geometry can't disagree with the screen.
+- Bottom corners use continuous curvature; top corners flare *outward* into
+  concave fillets joining the menu bar, so it reads as an extension of the
+  hardware at every size. Both radii are animatable.
+- Shape leads, content follows — content fades in after the shape grows and
+  leaves before it shrinks.
+
+## The bug that had to be fixed first
+
+The padded window accepted mouse events across its whole rect, silently
+swallowing clicks on menu-bar items next to the notch. Fix: a `hitTest` override
+returning `nil` outside the visible shape path, which the state machine exposes
+as `interactiveRegion: CGPath`. Acceptance test is blunt — running collapsed,
+every adjacent menu-bar icon stays clickable.
+
+## Reading now-playing after Apple closed the door
+
+MediaRemote has been blocked for unentitled apps since macOS 15.4.
+
+- **Primary:** vendored mediaremote-adapter — a bundled Perl script launches an
+  Apple-entitled helper that streams now-playing JSON over stdout.
+- **Fallback:** `DistributedNotificationCenter` for `com.apple.Music.playerInfo`
+  and `com.spotify.client.PlaybackStateChanged`, controls via AppleScript.
+
+That's a dependency on an unofficial path, so if an OS update breaks it music
+degrades instead of disappearing.
+
+## Smaller things
+
+- **Multi-display** pins by display *UUID*, not name, so two identical monitors
+  stay distinguishable. Unplugging a pinned display falls back to automatic and
+  keeps the pin — it snaps back on reconnect.
+- **Privacy** sets `window.sharingType = .none` by default, so the notch is
+  invisible in screenshots and screen shares. Public API, zero cost, and the
+  right default for something overlaying every app you demo.
+
+## The testing constraint
+
+`swift test` can't link on a Command Line Tools install — neither `XCTest` nor
+swift-testing's interop layer ships outside Xcode. So:
+
+- The whole app is a library with a thin executable in front of it, and the suite
+  imports that library directly.
+- ~90 lines of assertion plumbing stand in for the framework. Non-zero exit on
+  failure, so CI needs nothing special.
+- Same principle in the icon pipeline — `sips` and `iconutil` ship with the CLT,
+  and the `.icns` is committed so a normal build never runs it.
+
+The barrier to contributing stays at "install Command Line Tools" instead of
+"install a 10 GB IDE."

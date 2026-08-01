@@ -1,0 +1,87 @@
+---
+title: minimal-query
+description: React Query's core rebuilt from scratch — stable key hashing, request deduplication, stale time, garbage collection — to find out where the behaviour actually comes from.
+status: live
+featured: true
+order: 4
+period:
+  start: '2025'
+tech: ['TypeScript', 'React']
+links:
+  github: 'https://github.com/kunaaal13/minimal-queries'
+---
+
+I had used React Query for years without being able to explain what happens
+between calling `useQuery` twice with the same key and getting one network
+request. So I rebuilt the core — about four hundred lines, four objects.
+
+- **QueryClient** — entry point. Defaults, plus a reference to the cache.
+- **QueryCache** — a `Map` from hashed key to `Query`. Where deduplication lives.
+- **Query** — one key's state and lifecycle, plus the in-flight promise and the
+  GC timer.
+- **QueryObserver** — the bridge to a component. Subscribes, decides whether a
+  fetch is needed, unsubscribes on unmount.
+
+## Deduplication isn't a feature, it's a location
+
+```ts
+async fetch() {
+  if (this.activePromise) {
+    return this.activePromise
+  }
+  // ...run, then clear activePromise in `finally`
+}
+```
+
+- Two components with the same key never coordinate. They subscribe to the same
+  `Query`, and that `Query` owns the single in-flight promise — so the second
+  caller is handed the first one.
+- Nothing is deduplicating anything. There was only ever one request, because
+  there's only ever one place for it to live.
+- Clearing in `finally` rather than after the `await` is what makes the *next*
+  fetch possible after a failure.
+- It only holds if identical-looking keys hash the same, so the hash is
+  `JSON.stringify` with a replacer that sorts plain-object keys. Without it,
+  `{ page: 1, sort: 'asc' }` and `{ sort: 'asc', page: 1 }` are a silent
+  cache-miss generator.
+
+## Stale time and GC time sound alike, do opposite jobs
+
+```ts
+// QueryObserver — should we go get fresh data?
+if (!lastUpdatedAt || Date.now() - lastUpdatedAt.getTime() > staleTime) {
+  this.query.fetch()
+}
+
+// Query — should we drop this entry entirely?
+unsubscribe(observer) {
+  this.subscribers.delete(observer)
+  if (this.subscribers.size === 0) this.scheduleGarbageCollection()
+}
+```
+
+- **Stale time** — how long data is trusted without refetching. Checked by the
+  observer at subscribe time.
+- **GC time** — how long an *unused* query is kept. A timer the query arms when
+  its last subscriber leaves, and clears the moment one arrives.
+- They never consult each other. A query can be stale and still cached, or fresh
+  and about to be collected. Confusing the two is most of why cache behaviour
+  feels unpredictable before you've seen an implementation.
+- It's also why mount → unmount → remount inside the window keeps its data: the
+  timer is cancelled before it ever fires.
+
+## The parts I'd write differently
+
+- The React binding is a `useReducer` counter bumped on every notification,
+  purely to force a re-render. Honest about being a hack — the real library uses
+  `useSyncExternalStore`, which also handles tearing under concurrent rendering.
+  Leaving the cruder version in made the difference legible.
+- `refetchOnWindowFocus: true` sits in the defaults and is never read by
+  anything. A leftover from copying the shape of the API before understanding
+  which parts carry weight.
+
+## Scope
+
+Educational, not a replacement. No suspense, no infinite queries, no mutations,
+no retries, no devtools. The goal was to read the real library's source and
+recognise everything in it — which worked.

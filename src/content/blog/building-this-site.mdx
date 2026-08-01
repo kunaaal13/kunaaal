@@ -1,0 +1,70 @@
+---
+title: What this site ships to your browser
+description: Measuring the JavaScript cost of a portfolio, and what I cut after looking at the numbers.
+publishedAt: 2026-08-01
+tags: ['Astro', 'Performance', 'Svelte']
+---
+
+I rebuilt this site on Astro with Svelte islands. The pitch for that stack is
+that you only pay for the interactivity you actually use. That is true, but only
+if you go and check — the defaults will happily hand you a framework runtime for
+a button.
+
+## The first measurement
+
+The homepage after the initial build:
+
+| Chunk | gzipped |
+| --- | --- |
+| ClientRouter | 5.6 kB |
+| Svelte runtime + island plumbing | 12.4 kB |
+| Theme toggle | 1.0 kB |
+
+Eighteen kilobytes. The theme toggle was a Svelte component with
+`client:load`, and that one directive pulled the entire Svelte runtime onto
+every page — including pages with no other interactivity at all. A blog post
+was paying 12 kB to run a button that toggles one CSS class.
+
+## The fix
+
+The toggle does not need a framework. It needs a click listener and a class:
+
+```ts
+document.addEventListener('click', (event) => {
+  const target = event.target as HTMLElement | null
+  if (!target?.closest('[data-theme-toggle]')) return
+  setTheme(resolveTheme(getStoredTheme()) === 'dark' ? 'light' : 'dark')
+})
+```
+
+Delegating on `document` rather than binding to the button matters here: the
+router swaps the DOM on navigation, so a directly-bound listener would die on
+the first link click. One listener on a node that never gets replaced sidesteps
+the whole problem.
+
+Result: **285 bytes**, down from 12.4 kB. Total for the page dropped to 6.0 kB,
+and pages without a real island now load no framework code at all.
+
+## Which icon is showing
+
+The other half is rendering the right glyph before JavaScript runs. Both icons
+are in the markup, and CSS picks:
+
+```html
+<svg class="size-4 dark:hidden">...</svg>
+<svg class="hidden size-4 dark:block">...</svg>
+```
+
+Combined with an inline script in `<head>` that sets the `dark` class before
+first paint, the correct icon is right immediately — no flash, no layout shift,
+nothing to hydrate.
+
+## What I kept
+
+Not everything should be hand-rolled. The command menu, the now-playing widget
+and the contact form all keep real state and genuinely earn a framework. Once
+any of them is on a page the runtime is loaded anyway, so the cost is
+amortised — it just should not be paid by pages that get nothing back.
+
+The rule I ended up with: reach for an island when there is *state*, not when
+there is an *event*.

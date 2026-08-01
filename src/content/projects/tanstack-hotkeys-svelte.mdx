@@ -1,0 +1,40 @@
+---
+title: TanStack Hotkeys — Svelte adapter
+description: Authored the Svelte adapter for TanStack's type-safe keyboard shortcuts library. Merged upstream, ~5,600 lines across 129 files.
+status: live
+featured: true
+order: 3
+period:
+  start: '2026'
+tech: ['TypeScript', 'Svelte 5', 'TanStack', 'Open Source']
+links:
+  live: 'https://github.com/TanStack/hotkeys'
+  github: 'https://github.com/TanStack/hotkeys/pull/45'
+---
+
+TanStack Hotkeys gives you keyboard shortcuts with real types — the shortcut
+map is the source of truth, so a typo in a key combination is a compile error
+rather than a binding that silently never fires. It shipped with a React
+adapter. I wrote the Svelte one.
+
+## What an adapter has to do
+
+The core is framework-agnostic: it owns the shortcut registry, key matching,
+scopes and the devtools bridge. An adapter's job is to connect that core to a
+framework's lifecycle and reactivity without leaking either into the other.
+
+For Svelte 5 that meant runes rather than stores. A shortcut map that changes
+should re-register without tearing down unrelated bindings, and every listener
+has to detach when the component does — otherwise a shortcut registered on a
+page you have navigated away from still fires.
+
+## Notes
+
+The interesting constraint was matching the React adapter's behaviour exactly
+without copying its shape. React's version leans on hooks and effect cleanup;
+the Svelte version uses `$effect` and its teardown, which runs on a different
+schedule. Same guarantees, different machinery — and the shared test suite runs
+against both, so a divergence fails the build.
+
+Merged as [#45](https://github.com/TanStack/hotkeys/pull/45): roughly 5,600
+lines added across 129 files, including the adapter, its tests, and docs.

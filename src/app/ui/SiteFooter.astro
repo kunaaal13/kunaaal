@@ -1,0 +1,105 @@
+---
+import Icon from '@/shared/ui/Icon.astro'
+import { SITE } from '@/shared/config/site'
+import { SOCIAL_LINKS } from '@/shared/config/social'
+
+const year = new Date().getFullYear()
+
+const facts = [
+  { label: 'Built with', values: ['Astro', 'Svelte', 'Tailwind CSS'] },
+  { label: 'Deployed on', values: ['Vercel'] },
+  ...(SITE.sourceRepo
+    ? [{ label: 'Source', values: [{ text: 'GitHub', href: SITE.sourceRepo }] }]
+    : []),
+]
+---
+
+<footer class="max-w-screen overflow-x-clip px-2">
+  <div class="mx-auto border-x border-line md:max-w-3xl">
+    <div class="screen-line-top screen-line-bottom">
+      <div class="stripe-divider h-12"></div>
+    </div>
+
+    {/*
+      Values run inline and wrap rather than stacking one per line — a
+      three-item list does not need three rows.
+
+      Each row is `grid-cols-[8rem_auto] justify-center`: `auto` on the value
+      column (not `1fr`) lets the label/value pair centre as a block while the
+      label stays right-aligned against its value. Centring the text itself
+      would break that alignment and the columns would stop reading as columns.
+    */}
+    <dl class="flex flex-col gap-3 py-8 font-mono text-sm">
+      {
+        facts.map((fact) => (
+          <div class="grid grid-cols-[8rem_auto] justify-center gap-4">
+            <dt class="text-right text-muted-foreground">{fact.label}</dt>
+            <dd>
+              <ul class="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                {fact.values.map((value, index) => (
+                  <>
+                    {index > 0 && (
+                      <li class="text-muted-foreground/40" aria-hidden="true">
+                        ·
+                      </li>
+                    )}
+                    <li>
+                      {typeof value === 'string' ? (
+                        value
+                      ) : (
+                        <a
+                          class="link-underline"
+                          href={value.href}
+                          target="_blank"
+                          rel="noopener"
+                        >
+                          {value.text}
+                        </a>
+                      )}
+                    </li>
+                  </>
+                ))}
+              </ul>
+            </dd>
+          </div>
+        ))
+      }
+    </dl>
+
+    <div
+      class="screen-line-top screen-line-bottom flex w-full before:z-1 after:z-1"
+    >
+      <div
+        class="mx-auto flex items-center gap-3 border-x border-line bg-background px-4"
+      >
+        {
+          SOCIAL_LINKS.map((social, i) => (
+            <>
+              {i > 0 && <div class="h-11 w-px bg-line" />}
+              <a
+                class="flex items-center text-muted-foreground transition-colors hover:text-foreground"
+                href={social.href}
+                target="_blank"
+                rel="noopener"
+                aria-label={`${social.title} profile`}
+              >
+                <Icon name={social.icon} class="size-4" />
+              </a>
+            </>
+          ))
+        }
+      </div>
+    </div>
+
+    {/*
+      Bottom padding lives inside the bordered container so the column rules
+      run all the way down. The extra room on small screens clears the floating
+      search button; above `sm` that button is hidden, so the space goes away.
+    */}
+    <p
+      class="pt-6 pb-6 text-center font-mono text-xs text-muted-foreground max-sm:pb-24"
+    >
+      &copy; {year} {SITE.name}
+    </p>
+  </div>
+</footer>

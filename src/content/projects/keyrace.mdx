@@ -1,0 +1,54 @@
+---
+title: KeyRace
+description: A real-time multiplayer typing race — socket.io rooms, server-computed scores, and host migration when the host walks away.
+status: archived
+featured: false
+order: 5
+period:
+  start: '2024'
+tech: ['TypeScript', 'React', 'Socket.IO', 'Turborepo']
+links:
+  github: 'https://github.com/kunaaal13/keyrace'
+---
+
+Create a room, share the id, everyone types the same paragraph and watches the
+leaderboard move. A Turborepo monorepo — Vite + React + TanStack Router on the
+client, a socket.io server holding the game state.
+
+## The server owns the game
+
+A `Game` instance per room, held in a `Map` on the server.
+
+- Clients emit **what they typed**, not a score. The server splits the paragraph
+  and the submission and counts matching words by position, so there's no number
+  to lie about.
+- Every state change fans out over the room channel — `player-joined`,
+  `player-score`, `game-started`, `game-finished`. The client is a renderer.
+- Only the host can start a round, and starting twice is rejected rather than
+  silently reshuffling everyone mid-race.
+- A round is a fixed 60-second timer; at the end the server picks the winner and
+  broadcasts it.
+
+## Room lifecycle is the part that's easy to skip
+
+The interesting case isn't the happy path, it's people leaving.
+
+- If the **host** disconnects, the first remaining player is promoted and a
+  `new-host` event goes out — the room keeps working instead of stranding
+  everyone in a lobby nobody can start.
+- If the room empties, the `Game` is deleted from the map, so a long-running
+  server doesn't accumulate abandoned rooms.
+- Explicit `leave`, socket `disconnect` and `beforeunload` all route through the
+  same handler, so a closed tab is treated exactly like a clicked button.
+
+## Degrading instead of failing
+
+Paragraphs come from a third-party text API, with a local generator behind it
+that builds one from a seed string. A dead API downgrades the *text* rather than
+the game — the round still starts.
+
+## Where it stopped
+
+The client's socket URL is hard-coded to localhost, so the server was never
+deployed and the hosted client can't reach one. Archived at that point: the
+game logic is the part worth keeping, and it holds up.

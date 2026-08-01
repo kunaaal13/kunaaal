@@ -1,0 +1,28 @@
+---
+import { cn } from '@/shared/lib/cn'
+import { CELLS, GRID } from './mark.mjs'
+
+/**
+ * The header mark: a solid, blocky "K".
+ *
+ * The grid lives in `mark.mjs` because the favicon set is generated from the
+ * same cells — see `scripts/build-icons.mjs`. Edit the shape there, run
+ * `npm run build:icons`, and the header and the tab icon stay in step.
+ */
+export interface Props {
+  class?: string
+}
+
+const { class: className } = Astro.props
+---
+
+<svg
+  viewBox={`0 0 ${GRID} ${GRID}`}
+  class={cn('size-8 shrink-0', className)}
+  fill="currentColor"
+  shape-rendering="crispEdges"
+  role="img"
+  aria-label="K"
+>
+  {CELLS.map(([x, y]) => <rect x={x} y={y} width="1" height="1" />)}
+</svg>

@@ -1,0 +1,67 @@
+---
+title: Svelte 5 runes, coming from React
+description: What actually changes when reactivity is a value instead of a hook — and the class of bugs that stops existing.
+publishedAt: 2026-07-18
+tags: ['Svelte', 'React', 'TypeScript']
+---
+
+I have written a lot of React. Moving to Svelte 5 for a side project, the thing
+that surprised me was not what runes add — it is what they remove.
+
+## Dependency arrays stop existing
+
+The React version of a derived value:
+
+```tsx
+const total = useMemo(() => items.reduce((a, b) => a + b.price, 0), [items])
+```
+
+You have to tell React what this depends on. Get the array wrong and you ship a
+stale value; get it too broad and you recompute constantly. Neither failure is
+loud.
+
+The Svelte version:
+
+```svelte
+let total = $derived(items.reduce((a, b) => a + b.price, 0))
+```
+
+There is no array because the compiler already knows. It tracked the read of
+`items` when the expression ran. This is not a nicer API for the same idea — it
+is a different idea, where the dependency graph is discovered rather than
+declared.
+
+## Stale closures go with it
+
+The bug I have spent the most cumulative hours on in React:
+
+```tsx
+useEffect(() => {
+  const id = setInterval(() => setCount(count + 1), 1000)
+  return () => clearInterval(id)
+}, []) // count is captured at 0, forever
+```
+
+`$state` is not a snapshot captured at render, so the equivalent does not have
+the trap. There is no render to capture from.
+
+## What is genuinely harder
+
+Two things got worse, not better:
+
+**`$effect` invites misuse.** It looks like `useEffect`, so the reflex is to
+reach for it — but most of what you would put in `useEffect` belongs in
+`$derived`. The rule I settled on: if the effect ends by assigning to state,
+it should have been a derived value.
+
+**Reactivity is not deep by default in the way you expect.** `$state` on an
+object gives you a proxy, which is mostly what you want, but reassigning
+versus mutating still produces different results and the difference is not
+always visible at the call site.
+
+## Where it lands
+
+For a component with three pieces of state and a couple of derived values, the
+Svelte version is meaningfully shorter and has fewer places to be wrong. For a
+large app, I have not run the experiment. But the specific bugs I stopped
+writing were real ones, and I do not miss them.

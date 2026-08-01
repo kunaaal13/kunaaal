@@ -1,0 +1,62 @@
+---
+import { cn } from '@/shared/lib/cn'
+
+/**
+ * Scalloped "verified" badge.
+ *
+ * The lobes are computed rather than hand-authored — an earlier hand-written
+ * path had uneven points and read as a lumpy blob at small sizes. Eight
+ * quadratic curves between evenly spaced valley points, each bulging through a
+ * peak control point, give a symmetric rosette at any scale.
+ *
+ * Decorative only: it marks the canonical profile, it is not a platform badge.
+ */
+export interface Props {
+  class?: string
+}
+
+const { class: className } = Astro.props
+
+const LOBES = 8
+const CENTER = 12
+const VALLEY = 9.4 // radius at the curve endpoints
+const PEAK = 13.1 // control-point radius, pushes each lobe outward
+
+const point = (angle: number, radius: number) =>
+  [
+    (CENTER + Math.cos(angle) * radius).toFixed(2),
+    (CENTER + Math.sin(angle) * radius).toFixed(2),
+  ] as const
+
+const step = (Math.PI * 2) / LOBES
+// Start at -90° so a lobe sits at the top and the shape reads upright.
+const start = -Math.PI / 2
+
+let badge = ''
+for (let i = 0; i < LOBES; i++) {
+  const from = start + i * step
+  const to = from + step
+  const control = point(from + step / 2, PEAK)
+  const end = point(to, VALLEY)
+
+  if (i === 0) {
+    const [x, y] = point(from, VALLEY)
+    badge += `M${x} ${y}`
+  }
+  badge += `Q${control[0]} ${control[1]} ${end[0]} ${end[1]}`
+}
+badge += 'Z'
+---
+
+<svg
+  viewBox="0 0 24 24"
+  class={cn('size-4.5 shrink-0 select-none', className)}
+  fill="currentColor"
+  aria-hidden="true"
+>
+  <path d={badge}></path>
+  {/* Checkmark knocked out in the background colour. */}
+  <path
+    d="M10.6 15.2 7.4 12l1.3-1.3 1.9 1.9 4.7-4.7 1.3 1.3z"
+    fill="var(--background)"></path>
+</svg>

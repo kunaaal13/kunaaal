@@ -1,0 +1,65 @@
+---
+import { cn } from '@/shared/lib/cn'
+import { formatDate, toISODate } from '@/shared/lib/date'
+import { isRecent, type Post } from '../model/post'
+
+export interface Props {
+  post: Post
+  class?: string
+  as?: 'h2' | 'h3'
+}
+
+const { post, class: className, as: Heading = 'h3' } = Astro.props
+const { title, image, publishedAt, updatedAt } = post.data
+const recent = isRecent(post)
+---
+
+<div
+  class={cn(
+    'group/post relative flex h-full flex-col gap-2 p-2 transition-colors hover:bg-accent-muted',
+    className
+  )}
+>
+  {
+    image && (
+      <div class="relative select-none">
+        <img
+          src={image}
+          alt=""
+          width="1200"
+          height="630"
+          loading="lazy"
+          decoding="async"
+          class="aspect-1200/630 w-full rounded-xl object-cover grayscale transition-[filter] duration-300 group-hover/post:grayscale-0"
+        />
+        <div
+          class="pointer-events-none absolute inset-0 rounded-xl inset-ring-1 inset-ring-black/15 dark:inset-ring-white/15"
+          aria-hidden="true"
+        />
+      </div>
+    )
+  }
+
+  <div class="flex flex-col gap-1 p-2">
+    <Heading class="text-lg leading-snug font-medium text-balance">
+      <a href={`/blog/${post.id}`}>
+        <span class="absolute inset-0" aria-hidden="true"></span>
+        {title}
+      </a>
+      {
+        recent && (
+          <span class="pointer-events-none ml-2 inline-block size-2 -translate-y-px rounded-full bg-info">
+            <span class="sr-only">{updatedAt ? 'Updated' : 'New'}</span>
+          </span>
+        )
+      }
+    </Heading>
+
+    <dl>
+      <dt class="sr-only">Published</dt>
+      <dd class="text-sm text-muted-foreground">
+        <time datetime={toISODate(publishedAt)}>{formatDate(publishedAt)}</time>
+      </dd>
+    </dl>
+  </div>
+</div>

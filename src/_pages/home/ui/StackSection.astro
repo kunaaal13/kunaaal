@@ -1,0 +1,59 @@
+---
+import Panel from '@/shared/ui/Panel.astro'
+import PanelHeader from '@/shared/ui/PanelHeader.astro'
+import PanelTitle from '@/shared/ui/PanelTitle.astro'
+import Tag from '@/shared/ui/Tag.astro'
+import Icon from '@/shared/ui/Icon.astro'
+import { groupByCategory } from '@/shared/config/stack'
+
+const groups = groupByCategory()
+---
+
+<Panel id="stack">
+  <PanelHeader>
+    <PanelTitle id="stack">Stack</PanelTitle>
+  </PanelHeader>
+
+  {/* 12rem gutter, matching the reference's --col-left-width. */}
+  <div class="relative [--col-left:--spacing(48)]">
+    <div
+      aria-hidden="true"
+      class="dashed-rule-y pointer-events-none absolute inset-y-0 left-(--col-left) -z-1 w-px max-sm:hidden"
+    >
+    </div>
+
+    {
+      groups.map((group, index) => (
+        <div class="grid items-start gap-y-2 border-b border-line py-4 last:border-none sm:grid-cols-[var(--col-left)_1fr]">
+          <h3 class="pl-4 text-sm/6 font-normal text-muted-foreground">
+            <span
+              class="mr-1.5 font-mono text-muted-foreground/50 select-none"
+              aria-hidden="true"
+            >
+              {String(index + 1).padStart(2, '0')}
+            </span>
+            {group.category}
+          </h3>
+
+          <ul class="flex flex-wrap gap-1.5 px-4">
+            {group.items.map((item) => (
+              <li class="flex">
+                <a href={item.href} target="_blank" rel="noopener">
+                  <Tag class="transition-colors hover:bg-accent">
+                    {item.icon && (
+                      <Icon
+                        name={item.icon}
+                        class="size-3.5 text-muted-foreground/80"
+                      />
+                    )}
+                    {item.title}
+                  </Tag>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))
+    }
+  </div>
+</Panel>

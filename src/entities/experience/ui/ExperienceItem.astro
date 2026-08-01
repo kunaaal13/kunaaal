@@ -1,0 +1,145 @@
+---
+import Tag from '@/shared/ui/Tag.astro'
+import { formatDuration, formatPeriod } from '@/shared/lib/date'
+import { renderInline, toBullets } from '@/shared/lib/markdown'
+import type { Experience } from '../model/experience'
+
+export interface Props {
+  experience: Experience
+}
+
+const { experience } = Astro.props
+const { company, companyUrl, location, locationType, positions, isCurrent } =
+  experience
+---
+
+<div
+  id={`experience-${experience.id}`}
+  class="group/experience screen-line-bottom scroll-mt-20 space-y-4 py-4"
+>
+  <div class="flex items-start gap-3 sm:items-center">
+    {/* Plain marker — the company name carries the link and the identity. */}
+    <div class="flex size-6 shrink-0 items-center justify-center select-none">
+      <span class="size-2 rounded-full bg-muted-foreground/30" aria-hidden="true"
+      ></span>
+    </div>
+
+    <div
+      class="flex min-w-0 flex-1 flex-col gap-x-3 gap-y-1 pr-1 sm:flex-row sm:items-baseline sm:justify-between"
+    >
+      <h3 class="text-xl/6 font-medium">
+        {
+          companyUrl ? (
+            <a class="link" href={companyUrl} target="_blank" rel="noopener">
+              {company}
+            </a>
+          ) : (
+            company
+          )
+        }
+      </h3>
+
+      {
+        location && (
+          <dl class="flex min-w-0 items-center gap-1.5 text-sm whitespace-nowrap text-muted-foreground">
+            <dt class="sr-only">Location</dt>
+            <dd class="truncate">{location}</dd>
+            {locationType && <dd>({locationType})</dd>}
+            {isCurrent && (
+              <dd>
+                <span class="sr-only">Current</span>
+                <span
+                  class="relative flex size-2.5 items-center justify-center"
+                  aria-hidden="true"
+                >
+                  <span class="absolute inline-flex size-2.5 animate-ping rounded-full bg-info opacity-50" />
+                  <span class="relative inline-flex size-1.5 rounded-full bg-info" />
+                </span>
+              </dd>
+            )}
+          </dl>
+        )
+      }
+    </div>
+  </div>
+
+  <div
+    class="relative space-y-4 before:absolute before:left-3 before:h-full before:w-px before:bg-border"
+  >
+    {
+      positions.map((position) => {
+        const { start, end } = position.employmentPeriod
+        const duration = formatDuration(position.employmentPeriod)
+        return (
+          <div class="relative">
+            <div class="mb-1 flex items-start gap-3">
+              <div class="flex size-6 shrink-0 items-center justify-center rounded-md border border-muted-foreground/15 bg-muted text-muted-foreground ring-1 ring-border/50 ring-offset-1 ring-offset-background">
+                <svg
+                  class="size-3.5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <rect x="2" y="7" width="20" height="14" rx="2" />
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                </svg>
+              </div>
+              <h4 class="flex-1 font-medium text-balance">{position.title}</h4>
+            </div>
+
+            <dl class="flex flex-wrap items-center gap-2 pl-9 text-sm text-muted-foreground">
+              {position.employmentType && (
+                <>
+                  <dt class="sr-only">Employment type</dt>
+                  <dd>{position.employmentType}</dd>
+                  <dd class="h-4 w-px self-center bg-border" aria-hidden="true" />
+                </>
+              )}
+              <dt class="sr-only">Period</dt>
+              <dd class="flex items-center gap-1 tabular-nums">
+                <span>{formatPeriod(start)}</span>
+                <span class="font-mono">—</span>
+                <span>{end ? formatPeriod(end) : 'Present'}</span>
+              </dd>
+              {duration && (
+                <>
+                  <dd class="h-4 w-px self-center bg-border" aria-hidden="true" />
+                  <dt class="sr-only">Duration</dt>
+                  <dd class="tabular-nums">{duration}</dd>
+                </>
+              )}
+            </dl>
+
+            {position.description && (
+              <div class="space-y-2 pt-3 pl-9 text-sm/[1.7] text-muted-foreground">
+                {position.description.split('\n\n').map((para) =>
+                  para.trimStart().startsWith('-') ? (
+                    <ul class="list-disc space-y-1.5 pl-4 marker:text-muted-foreground/40">
+                      {toBullets(para).map((line) => (
+                        <li class="ps-0.5" set:html={renderInline(line)} />
+                      ))}
+                    </ul>
+                  ) : (
+                    <p set:html={renderInline(para)} />
+                  )
+                )}
+              </div>
+            )}
+
+            {position.skills && position.skills.length > 0 && (
+              <ul class="flex flex-wrap gap-1.5 pt-3 pl-9">
+                {position.skills.map((skill) => (
+                  <li class="flex">
+                    <Tag>{skill}</Tag>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )
+      })
+    }
+  </div>
+</div>

@@ -1,0 +1,81 @@
+---
+import { cn } from '@/shared/lib/cn'
+
+/**
+ * Long-form styling for rendered MDX.
+ *
+ * The elements come from the Markdown compiler, so they cannot carry classes
+ * of their own — arbitrary variants (`[&_h2]:…`) are how Tailwind reaches
+ * them. Verbose, but it keeps every value coming from the same token scale as
+ * the rest of the site instead of a parallel stylesheet.
+ */
+export interface Props {
+  class?: string
+}
+
+const { class: className } = Astro.props
+
+// Flow rhythm: 1.25em between blocks, matching the reference's --typeset-flow.
+const flow = '[&>*+*]:mt-[1.25em]'
+
+const headings = [
+  '[&_h2]:mt-8 [&_h2]:text-xl [&_h3]:mt-7 [&_h3]:text-[1.075rem]',
+  '[&_:is(h2,h3,h4)]:font-medium [&_:is(h2,h3,h4)]:tracking-tight',
+  '[&_:is(h2,h3,h4)]:text-pretty [&_:is(h2,h3,h4)]:scroll-mt-20',
+].join(' ')
+
+const body = [
+  '[&_:is(p,ul,ol)]:text-muted-foreground',
+  '[&_:is(ul,ol)]:pl-5 [&_ul]:list-disc [&_ol]:list-decimal',
+  '[&_li+li]:mt-1.5 [&_li]:marker:text-xs [&_li]:marker:text-muted-foreground/50',
+  '[&_strong]:font-medium [&_strong]:text-foreground',
+].join(' ')
+
+const links = [
+  '[&_a]:text-foreground [&_a]:underline [&_a]:underline-offset-3',
+  '[&_a]:decoration-current/30 [&_a]:transition-colors hover:[&_a]:decoration-current',
+].join(' ')
+
+const blocks = [
+  '[&_blockquote]:border-l [&_blockquote]:border-line [&_blockquote]:pl-4 [&_blockquote]:text-muted-foreground',
+  '[&_hr]:border-line',
+  '[&_img]:rounded-xl [&_img]:border [&_img]:border-line',
+].join(' ')
+
+// Inline code only — `:not(pre)>code` keeps these off Shiki's highlighted
+// blocks, which bring their own background and padding.
+const code = [
+  '[&_:not(pre)>code]:rounded-md [&_:not(pre)>code]:border [&_:not(pre)>code]:bg-muted/50',
+  '[&_:not(pre)>code]:px-1 [&_:not(pre)>code]:py-px [&_:not(pre)>code]:font-mono [&_:not(pre)>code]:text-[0.875em]',
+  '[&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:border [&_pre]:p-4 [&_pre]:text-[0.8125rem]/relaxed',
+].join(' ')
+
+// Shiki emits both themes as CSS variables on every token, so switching theme
+// is a variable swap rather than a re-highlight.
+const shikiDark =
+  'dark:[&_pre]:!bg-[var(--shiki-dark-bg)] dark:[&_pre_span]:!text-[var(--shiki-dark)]'
+
+// Tables scroll inside their own box so a wide one never widens the page.
+const tables = [
+  '[&_table]:block [&_table]:w-full [&_table]:overflow-x-auto [&_table]:border-collapse [&_table]:text-sm',
+  '[&_:is(th,td)]:border-b [&_:is(th,td)]:border-line [&_:is(th,td)]:px-3 [&_:is(th,td)]:py-2 [&_:is(th,td)]:text-left',
+  '[&_th]:font-medium [&_td]:text-muted-foreground',
+].join(' ')
+---
+
+<div
+  class={cn(
+    'text-[15px]/[1.75]',
+    flow,
+    headings,
+    body,
+    links,
+    blocks,
+    code,
+    shikiDark,
+    tables,
+    className
+  )}
+>
+  <slot />
+</div>

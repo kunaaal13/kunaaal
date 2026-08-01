@@ -1,0 +1,84 @@
+---
+title: Rendering 10,000 boxes in the browser
+description: A container-packing simulator was fine at a hundred packages and unusable at ten thousand. The fix was one Three.js utility.
+publishedAt: 2026-03-05
+tags: ['Three.js', 'React', 'Performance', 'WebGL']
+---
+
+A logistics client needed to see how packages pack into a shipping container —
+rotate it, zoom in, click a box, watch the load sequence. Straightforward, until
+we found out a real container holds up to 10,000 packages.
+
+## Why Three.js
+
+Canvas and SVG were out as soon as we needed depth and perspective. Babylon.js
+is excellent but felt heavy and wasn't built with React in mind. Unity or a
+WASM renderer would have performed brilliantly and cost us weeks of integration
+for a React SaaS app.
+
+Three.js gave us a scene graph, lighting, camera controls and full control over
+geometry, without dragging in a runtime we'd have to fight.
+
+## Then React Three Fiber
+
+Raw Three.js inside React gets ugly fast. It's imperative, React is
+declarative, and keeping state coherent across the two is a constant tax.
+
+React Three Fiber renders Three.js from JSX. Scenes become components, state
+comes from hooks, and UI panels sit in the same tree as the objects they
+control. It stopped being a canvas bolted onto an app and started being an app.
+
+## Where it fell over
+
+At a hundred boxes everything was fine. At ten thousand, high-end laptops
+struggled. Four things were happening at once:
+
+- **Draw calls.** Every box was its own mesh, so every box was its own draw
+  call — ten thousand per frame.
+- **Idle rendering.** The renderer redrew a completely static scene every
+  frame, whether the camera moved or not.
+- **Memory.** Distinct materials for SKU colouring meant geometry and textures
+  stacked up fast.
+- **No batching.** Neither Three.js nor R3F batches geometry for you. Every
+  item is treated individually until you say otherwise.
+
+## The fix
+
+Most of those boxes were identical — same dimensions, same material, different
+position. Rendering each as its own mesh was the whole problem.
+
+```ts
+import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js'
+
+// Group by box type, bake each instance's transform into its geometry,
+// then merge the group into one mesh.
+const merged = BufferGeometryUtils.mergeGeometries(
+  boxes.map((box) => {
+    const geometry = new THREE.BoxGeometry(box.w, box.h, box.d)
+    geometry.applyMatrix4(box.matrix)
+    return geometry
+  })
+)
+```
+
+Ten thousand draw calls became a handful. Frame drops disappeared, memory came
+down, and the camera stayed smooth.
+
+## The rest of it
+
+Merging did most of the work. These closed the gap:
+
+- **Frustum culling** — don't draw what the camera can't see.
+- **Lazy rendering** — don't re-render a scene that hasn't changed.
+- **Pixel-ratio scaling** — drop `devicePixelRatio` on weak GPUs. Barely
+  visible, meaningfully faster.
+- **Memoised components** — stop React re-creating 3D objects on every render.
+
+## What I'd tell myself
+
+Merging geometry is the first thing to reach for, not the last. Everything else
+was worth maybe 20% between them; merging was the difference between unusable
+and smooth.
+
+And the machine you build on lies to you. It ran fine on a laptop with a
+discrete GPU long after it had stopped being usable on integrated graphics.

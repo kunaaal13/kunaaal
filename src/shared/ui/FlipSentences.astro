@@ -1,0 +1,73 @@
+---
+import { cn } from '@/shared/lib/cn'
+
+/**
+ * Rotating tagline, done in CSS.
+ *
+ * Same reasoning as the theme toggle: a timer plus a text swap does not
+ * justify a framework runtime. Lines share one animation and are offset by
+ * `animation-delay`, so exactly one is visible at a time.
+ *
+ * Keyframes live in the design system (app/styles/global.css) because the
+ * visible slice is 100/N and keyframe selectors cannot use calc() — so each
+ * line count needs its own block. Two through five are defined; anything
+ * outside that renders a single static line rather than animating wrongly.
+ */
+export interface Props {
+  sentences: string[]
+  /** Seconds each line is held. */
+  interval?: number
+  class?: string
+}
+
+const { sentences, interval = 3, class: className } = Astro.props
+
+const count = sentences.length
+
+// Explicit map, not a template literal — Tailwind scans source for complete
+// class names, so a generated `animate-flip-${n}` would never be emitted.
+const ANIMATION: Record<number, string> = {
+  2: 'animate-flip-2',
+  3: 'animate-flip-3',
+  4: 'animate-flip-4',
+  5: 'animate-flip-5',
+}
+
+const animation = ANIMATION[count]
+---
+
+{/*
+  Two elements on purpose. The outer one takes the caller's classes (padding,
+  font, colour); the inner one is the animation box. Collapsing them would put
+  the absolutely-positioned lines at the padding-box edge, which crops
+  descenders against whatever sits below.
+*/}
+<div class={className}>
+  {
+    animation ? (
+      <div
+        class="relative h-[1.5em] overflow-hidden"
+        style={`--flip-duration: ${count * interval}s`}
+      >
+        {sentences.map((sentence, index) => (
+          <span
+            class={cn(
+              'absolute inset-x-0 top-0 leading-[1.5] truncate opacity-0 motion-reduce:animate-none',
+              animation
+            )}
+            style={`animation-delay: ${index * interval}s`}
+            aria-hidden="true"
+          >
+            {sentence}
+          </span>
+        ))}
+        {/* Stable copy for assistive tech, and the reduced-motion fallback. */}
+        <span class="absolute inset-x-0 top-0 truncate leading-[1.5] opacity-0 motion-reduce:opacity-100">
+          {sentences[0]}
+        </span>
+      </div>
+    ) : (
+      <div class="h-[1.5em] truncate leading-[1.5]">{sentences[0]}</div>
+    )
+  }
+</div>

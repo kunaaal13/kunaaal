@@ -1,0 +1,16 @@
+---
+import { cn } from '@/shared/lib/cn'
+
+interface Props {
+  class?: string
+}
+
+const { class: className } = Astro.props
+---
+
+<header
+  data-slot="panel-header"
+  class={cn('screen-line-bottom px-4', className)}
+>
+  <slot />
+</header>

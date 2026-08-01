@@ -1,0 +1,43 @@
+---
+import { cn } from '@/shared/lib/cn'
+
+/**
+ * Section heading. When given an `id` it becomes a self-link, so any section
+ * on the page is directly addressable.
+ */
+export interface Props {
+  /** Anchor target. Also used as the fragment for the self-link. */
+  id?: string
+  /** Small superscript after the title, e.g. an item count. */
+  sup?: string | number
+  class?: string
+  as?: 'h1' | 'h2' | 'h3'
+}
+
+const { id, sup, class: className, as: Tag = 'h2' } = Astro.props
+---
+
+<Tag
+  data-slot="panel-title"
+  class={cn(
+    'font-heading py-4 text-3xl font-medium tracking-tight text-balance',
+    className
+  )}
+>
+  {
+    id ? (
+      <a href={`#${id}`} class="hover:underline underline-offset-4">
+        <slot />
+      </a>
+    ) : (
+      <slot />
+    )
+  }
+  {
+    sup !== undefined && (
+      <sup class="ml-1 top-[-0.75em] text-sm font-medium tracking-normal text-muted-foreground">
+        ({sup})
+      </sup>
+    )
+  }
+</Tag>

@@ -1,0 +1,30 @@
+---
+import BaseLayout from '@/app/layouts/BaseLayout.astro'
+import Panel from '@/shared/ui/Panel.astro'
+import PanelHeader from '@/shared/ui/PanelHeader.astro'
+import PanelTitle from '@/shared/ui/PanelTitle.astro'
+import { ProjectCard, getProjects } from '@/entities/project'
+
+const projects = await getProjects()
+---
+
+<BaseLayout
+  title="Projects"
+  description="Things I've built — shipped, in progress, and archived."
+>
+  <div class="mx-auto md:max-w-3xl">
+    <Panel>
+      <PanelHeader>
+        <PanelTitle id="projects" as="h1" sup={projects.length}>
+          Projects
+        </PanelTitle>
+      </PanelHeader>
+
+      <div class="p-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {projects.map((project) => <ProjectCard project={project} />)}
+        </div>
+      </div>
+    </Panel>
+  </div>
+</BaseLayout>

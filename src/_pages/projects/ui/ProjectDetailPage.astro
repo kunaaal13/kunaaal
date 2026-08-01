@@ -1,0 +1,149 @@
+---
+import { render } from 'astro:content'
+import BaseLayout from '@/app/layouts/BaseLayout.astro'
+import Panel from '@/shared/ui/Panel.astro'
+import PanelContent from '@/shared/ui/PanelContent.astro'
+import Prose from '@/shared/ui/Prose.astro'
+import Tag from '@/shared/ui/Tag.astro'
+import Icon from '@/shared/ui/Icon.astro'
+import { formatPeriod } from '@/shared/lib/date'
+import { STATUS_META, type Project } from '@/entities/project'
+
+export interface Props {
+  project: Project
+}
+
+const { project } = Astro.props
+const { title, description, cover, status, tech, links, period } = project.data
+const { Content } = await render(project)
+const status_ = STATUS_META[status]
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  image={`/og/projects/${project.id}.png`}
+>
+  <div class="mx-auto md:max-w-3xl">
+    <Panel>
+      <PanelContent class="space-y-4">
+        <a
+          href="/projects"
+          class="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <svg
+            class="size-3.5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M19 12H5M11 18l-6-6 6-6"></path>
+          </svg>
+          All projects
+        </a>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <h1 class="text-3xl font-medium tracking-tight text-balance">
+            {title}
+          </h1>
+          <span class="flex items-center gap-1.5 select-none">
+            <span class={`inline-flex size-2 rounded-full ${status_.dot}`}></span>
+            <span class="text-xs font-medium text-muted-foreground">
+              {status_.label}
+            </span>
+          </span>
+        </div>
+
+        <p class="text-[15px] text-muted-foreground">{description}</p>
+
+        <dl class="flex items-center gap-2 font-mono text-sm text-muted-foreground">
+          <dt class="sr-only">Period</dt>
+          <dd class="tabular-nums">
+            {formatPeriod(period.start)}{
+              period.end ? ` — ${formatPeriod(period.end)}` : ' — Present'
+            }
+          </dd>
+        </dl>
+
+        {
+          (links.live || links.github) && (
+            <div class="flex flex-wrap gap-2">
+              {links.live && (
+                <a
+                  href={links.live}
+                  target="_blank"
+                  rel="noopener"
+                  class="inline-flex h-8 items-center gap-2 rounded-md bg-foreground px-3 text-sm font-medium text-background transition-opacity hover:opacity-90"
+                >
+                  Visit
+                  <svg
+                    class="size-3.5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M7 17 17 7M7 7h10v10" />
+                  </svg>
+                </a>
+              )}
+              {links.github && (
+                <a
+                  href={links.github}
+                  target="_blank"
+                  rel="noopener"
+                  class="inline-flex h-8 items-center gap-2 rounded-md border border-border px-3 text-sm font-medium transition-colors hover:bg-accent"
+                >
+                  <Icon name="siGithub" class="size-3.5" />
+                  Source
+                </a>
+              )}
+            </div>
+          )
+        }
+
+        {
+          tech.length > 0 && (
+            <ul class="flex flex-wrap gap-1.5 pt-1">
+              {tech.map((name) => (
+                <li class="flex">
+                  <Tag>{name}</Tag>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+      </PanelContent>
+    </Panel>
+
+    {
+      cover && (
+        <Panel seamlessTop>
+          <div class="p-4">
+            <img
+              src={cover}
+              alt={title}
+              width="1200"
+              height="630"
+              class="w-full rounded-xl border border-line object-cover"
+              style={`view-transition-name: project-${project.id}`}
+            />
+          </div>
+        </Panel>
+      )
+    }
+
+    <Panel seamlessTop={!cover}>
+      <PanelContent>
+        <Prose>
+          <Content />
+        </Prose>
+      </PanelContent>
+    </Panel>
+  </div>
+</BaseLayout>

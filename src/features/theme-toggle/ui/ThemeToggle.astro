@@ -1,0 +1,77 @@
+---
+/**
+ * Deliberately not a Svelte island.
+ *
+ * This button toggles one class on <html>. Doing it in Svelte pulls the ~12 kB
+ * (gzipped) runtime onto every page, including ones with no other
+ * interactivity. A delegated listener does the same job in well under 1 kB, so
+ * pages like a blog post stay effectively JS-free.
+ *
+ * The slice keeps its FSD shape — model/theme.ts still owns the logic, this is
+ * just a lighter ui/ implementation.
+ */
+---
+
+<button
+  type="button"
+  data-theme-toggle
+  class="flex size-8 items-center justify-center rounded-md text-muted-foreground
+         transition-colors hover:bg-accent hover:text-foreground
+         focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+  aria-label="Toggle theme"
+>
+  {/*
+    Both glyphs are rendered and CSS picks one off the `dark` class. Choosing
+    in CSS rather than JS means the right icon is correct on first paint,
+    with no flicker while scripts load.
+  */}
+  <svg
+    class="size-4 dark:hidden"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="4"></circle>
+    <path
+      d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+    ></path>
+  </svg>
+  <svg
+    class="hidden size-4 dark:block"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+  </svg>
+</button>
+
+<script>
+  import {
+    getStoredTheme,
+    resolveTheme,
+    setTheme,
+  } from '@/features/theme-toggle/model/theme'
+
+  // Delegated on document, so it survives ClientRouter swapping the DOM.
+  // Re-binding per page would need astro:page-load and risks double-binding.
+  document.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement | null
+    if (!target?.closest('[data-theme-toggle]')) return
+    setTheme(resolveTheme(getStoredTheme()) === 'dark' ? 'light' : 'dark')
+  })
+
+  // Follow the OS while the visitor has not made an explicit choice.
+  window
+    .matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', () => {
+      if (getStoredTheme() === 'system') setTheme('system')
+    })
+</script>

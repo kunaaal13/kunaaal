@@ -1,0 +1,30 @@
+---
+import BaseLayout from '@/app/layouts/BaseLayout.astro'
+import Panel from '@/shared/ui/Panel.astro'
+import PanelHeader from '@/shared/ui/PanelHeader.astro'
+import PanelTitle from '@/shared/ui/PanelTitle.astro'
+import { ExperienceItem, getExperiences } from '@/entities/experience'
+
+const experiences = getExperiences()
+---
+
+<BaseLayout
+  title="Work"
+  description="Where I've worked and what I built there."
+>
+  <div class="mx-auto md:max-w-3xl">
+    <Panel>
+      <PanelHeader>
+        <PanelTitle id="experience" as="h1">Experience</PanelTitle>
+      </PanelHeader>
+
+      <div class="pr-2 pl-4">
+        {
+          experiences.map((experience) => (
+            <ExperienceItem experience={experience} />
+          ))
+        }
+      </div>
+    </Panel>
+  </div>
+</BaseLayout>

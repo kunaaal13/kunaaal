@@ -1,0 +1,60 @@
+---
+import BaseLayout from '@/app/layouts/BaseLayout.astro'
+import Panel from '@/shared/ui/Panel.astro'
+import PanelHeader from '@/shared/ui/PanelHeader.astro'
+import PanelTitle from '@/shared/ui/PanelTitle.astro'
+import { BOOKMARKS, groupBookmarks } from '@/shared/config/bookmarks'
+import { urlToName } from '@/shared/lib/url'
+
+const groups = groupBookmarks()
+---
+
+<BaseLayout
+  title="Bookmarks"
+  description="Links and tools worth keeping around."
+>
+  <div class="mx-auto md:max-w-3xl">
+    <Panel>
+      <PanelHeader>
+        <PanelTitle id="bookmarks" as="h1" sup={BOOKMARKS.length}>
+          Bookmarks
+        </PanelTitle>
+      </PanelHeader>
+
+      {
+        groups.map((group) => (
+          <section class="border-b border-line last:border-none">
+            <h2 class="px-4 pt-4 font-mono text-xs tracking-wide text-muted-foreground uppercase">
+              {group.category}
+            </h2>
+
+            <ul>
+              {group.items.map((bookmark) => (
+                <li class="relative">
+                  <a
+                    href={bookmark.href}
+                    target="_blank"
+                    rel="noopener"
+                    class="group flex flex-col gap-1 p-4 transition-colors hover:bg-accent-muted"
+                  >
+                    <div class="flex items-baseline justify-between gap-3">
+                      <h3 class="font-medium group-hover:underline underline-offset-4">
+                        {bookmark.title}
+                      </h3>
+                      <span class="shrink-0 font-mono text-xs text-muted-foreground">
+                        {urlToName(bookmark.href)}
+                      </span>
+                    </div>
+                    <p class="text-sm text-muted-foreground">
+                      {bookmark.description}
+                    </p>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
+      }
+    </Panel>
+  </div>
+</BaseLayout>

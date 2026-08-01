@@ -1,0 +1,30 @@
+---
+import Panel from '@/shared/ui/Panel.astro'
+import PanelHeader from '@/shared/ui/PanelHeader.astro'
+import PanelTitle from '@/shared/ui/PanelTitle.astro'
+import PanelContent from '@/shared/ui/PanelContent.astro'
+import { PROFILE } from '@/entities/profile'
+import { renderInline } from '@/shared/lib/markdown'
+
+// Prose, not a list. Paragraphs are separated by a blank line; the detail that
+// used to live here as bullets now sits in Experience and Projects, where it
+// carries dates and context.
+const paragraphs = PROFILE.about
+  .split(/\n\s*\n/)
+  .map((block) => block.trim().replace(/\s*\n\s*/g, ' '))
+  .filter(Boolean)
+---
+
+<Panel id="about">
+  <PanelHeader>
+    <PanelTitle id="about">About</PanelTitle>
+  </PanelHeader>
+
+  <PanelContent>
+    <div
+      class="space-y-4 text-[15px]/[1.75] text-muted-foreground text-pretty"
+    >
+      {paragraphs.map((text) => <p set:html={renderInline(text)} />)}
+    </div>
+  </PanelContent>
+</Panel>

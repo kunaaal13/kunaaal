@@ -1,0 +1,61 @@
+---
+import * as simpleIcons from 'simple-icons'
+import { LOCAL_ICONS, type LocalIcon } from '@/shared/ui/icons'
+import { cn } from '@/shared/lib/cn'
+
+/**
+ * Renders a brand glyph inline. Resolution happens at build time, so the icon
+ * set never reaches the browser — only the single mark we actually used.
+ *
+ * `name` is the Simple Icons export key verbatim (siTypescript, siNodedotjs).
+ * Using the key rather than a slug avoids a mapping layer that would silently
+ * drop icons whose slug and key differ (node.js -> siNodedotjs).
+ *
+ * Local overrides take priority, and may be multi-path with their own colours.
+ * See shared/ui/icons.ts.
+ */
+export interface Props {
+  name: string
+  class?: string
+  /** Paint with the brand colour instead of inheriting currentColor. */
+  brand?: boolean
+}
+
+const { name, class: className, brand = false } = Astro.props
+
+const icon: LocalIcon | undefined =
+  LOCAL_ICONS[name] ??
+  ((simpleIcons as Record<string, unknown>)[name] as LocalIcon | undefined)
+
+if (!icon && import.meta.env.DEV) {
+  console.warn(`[Icon] Unknown icon: "${name}"`)
+}
+
+// Multi-path marks carry their own fills and ignore `brand` entirely — their
+// colours are the logo.
+const isMultiPath = Boolean(icon?.paths?.length)
+---
+
+{
+  icon ? (
+    <svg
+      role="img"
+      viewBox={icon.viewBox ?? '0 0 24 24'}
+      xmlns="http://www.w3.org/2000/svg"
+      class={cn('size-4 shrink-0', className)}
+      fill={isMultiPath ? undefined : brand && icon.hex ? `#${icon.hex}` : 'currentColor'}
+      aria-hidden="true"
+    >
+      <title>{icon.title}</title>
+      {isMultiPath
+        ? icon.paths!.map((part) => <path d={part.d} fill={part.fill} />)
+        : icon.path && <path d={icon.path} />}
+    </svg>
+  ) : (
+    // Unknown icon degrades to a neutral dot rather than breaking the layout.
+    <span
+      class={cn('inline-block size-1.5 rounded-full bg-current/40', className)}
+      aria-hidden="true"
+    />
+  )
+}

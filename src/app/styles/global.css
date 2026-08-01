@@ -1,0 +1,331 @@
+@import 'tailwindcss';
+
+/*
+ * Geist Sans + Geist Mono, self-hosted and variable-weight.
+ *
+ * Variable means one file covers every weight, so the whole family costs two
+ * requests. Self-hosting keeps it on our own origin — no third-party font CDN
+ * in the critical path, and nothing to leak a referrer to.
+ */
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+
+/* ---------------------------------------------------------------------------
+ * Design system
+ *
+ * A token set plus a handful of `@utility` rules that draw the full-bleed
+ * hairlines and diagonal-stripe dividers the layout is built on.
+ * ------------------------------------------------------------------------- */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Doubles hairline crispness on 2x displays — a 1px border reads as heavy on
+ * retina, so borders drop to 0.5px where the display can resolve it. */
+@custom-variant retina {
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2x) {
+    @slot;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-muted: var(--accent-muted);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-line: var(--line);
+  --color-ring: var(--ring);
+  --color-info: var(--info);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-destructive: var(--destructive);
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+  --color-selection: var(--selection);
+  --color-selection-foreground: var(--selection-foreground);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-heading: var(--font-sans);
+
+  /* ss11 squares off the comma/quote shapes, zero slashes the 0, tnum keeps
+   * dates and durations from reflowing as digits change. */
+  --default-mono-font-feature-settings: 'ss11' 1, 'zero' 1, 'tnum' 1;
+
+  /* --- Rotating text ------------------------------------------------------
+   * One keyframe set per line count. Each line shares the animation and is
+   * offset by `animation-delay`, so exactly one is visible at a time.
+   *
+   * The percentages have to be literals — keyframe selectors cannot use
+   * calc() — and the visible slice is 100/N, so N needs its own block. Two
+   * through five covers any sane tagline list; outside that range the
+   * component falls back to a single static line.
+   * --------------------------------------------------------------------- */
+
+  --animate-flip-2: flip-2 var(--flip-duration, 6s) ease infinite;
+  --animate-flip-3: flip-3 var(--flip-duration, 9s) ease infinite;
+  --animate-flip-4: flip-4 var(--flip-duration, 12s) ease infinite;
+  --animate-flip-5: flip-5 var(--flip-duration, 15s) ease infinite;
+
+  @keyframes flip-2 {
+    0% { opacity: 0; transform: translateY(0.4em); }
+    3% { opacity: 1; transform: translateY(0); }
+    47% { opacity: 1; transform: translateY(0); }
+    50% { opacity: 0; transform: translateY(-0.4em); }
+    100% { opacity: 0; transform: translateY(-0.4em); }
+  }
+
+  @keyframes flip-3 {
+    0% { opacity: 0; transform: translateY(0.4em); }
+    2.5% { opacity: 1; transform: translateY(0); }
+    30.8% { opacity: 1; transform: translateY(0); }
+    33.3% { opacity: 0; transform: translateY(-0.4em); }
+    100% { opacity: 0; transform: translateY(-0.4em); }
+  }
+
+  @keyframes flip-4 {
+    0% { opacity: 0; transform: translateY(0.4em); }
+    2% { opacity: 1; transform: translateY(0); }
+    23% { opacity: 1; transform: translateY(0); }
+    25% { opacity: 0; transform: translateY(-0.4em); }
+    100% { opacity: 0; transform: translateY(-0.4em); }
+  }
+
+  @keyframes flip-5 {
+    0% { opacity: 0; transform: translateY(0.4em); }
+    1.5% { opacity: 1; transform: translateY(0); }
+    18.5% { opacity: 1; transform: translateY(0); }
+    20% { opacity: 0; transform: translateY(-0.4em); }
+    100% { opacity: 0; transform: translateY(-0.4em); }
+  }
+
+  /* Now-playing equaliser bar. Three of these at staggered delays read as
+   * audio without a canvas or a single byte of animation JS. */
+  --animate-eq: eq 900ms ease-in-out infinite;
+
+  @keyframes eq {
+    0%, 100% { height: 30%; }
+    50% { height: 100%; }
+  }
+}
+
+:root {
+  --font-sans:
+    'Geist Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono:
+    'Geist Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --background: oklch(1 0 0); /* white */
+  --foreground: oklch(0.141 0.005 285.823); /* zinc-950 */
+  --muted: oklch(0.967 0.001 286.375); /* zinc-100 */
+  --muted-foreground: oklch(0.552 0.016 285.938); /* zinc-500 */
+  --accent: oklch(0.967 0.001 286.375); /* zinc-100 */
+  --accent-muted: color-mix(in oklab, var(--accent) 50%, transparent);
+  --accent-foreground: oklch(0.21 0.006 285.885); /* zinc-900 */
+  --border: oklch(0.92 0.004 286.32); /* zinc-200 */
+  --ring: oklch(0.705 0.015 286.067); /* zinc-400 */
+
+  /* The token the whole aesthetic hangs on. Every panel edge, every hairline
+   * and every dashed rule resolves to this. It is deliberately softer than
+   * --border so a page dense with rules does not read as a wireframe. */
+  --line: color-mix(in oklab, var(--border) 64%, var(--background));
+
+  --info: oklch(0.67 0.17 244.98);
+  --success: oklch(0.723 0.219 149.579); /* green-500 — "Live" */
+  --warning: oklch(0.769 0.188 70.08); /* amber-500 — "Building" */
+  --destructive: oklch(0.577 0.245 27.325);
+
+  --surface: oklch(0.985 0 0); /* zinc-50 */
+  --surface-foreground: oklch(0.141 0.005 285.823);
+
+  --selection: oklch(0.141 0.005 285.823);
+  --selection-foreground: oklch(0.985 0 0);
+
+  --header-height: --spacing(14);
+}
+
+.dark {
+  --background: oklch(0.141 0.005 285.823); /* zinc-950 */
+  --foreground: oklch(0.985 0 0); /* zinc-50 */
+  --muted: oklch(0.274 0.006 286.033); /* zinc-800 */
+  --muted-foreground: oklch(0.705 0.015 286.067); /* zinc-400 */
+  --accent: oklch(0.274 0.006 286.033); /* zinc-800 */
+  --accent-muted: color-mix(in oklab, var(--accent) 20%, transparent);
+  --accent-foreground: oklch(0.985 0 0);
+  --border: oklch(0.274 0.006 286.033); /* zinc-800 */
+  --ring: oklch(0.552 0.016 285.938); /* zinc-500 */
+
+  /* Dark mode drops the color-mix: against a near-black background the mixed
+   * line disappears entirely, so --line rides --border directly. */
+  --line: var(--border);
+
+  --success: oklch(0.723 0.219 149.579);
+  --warning: oklch(0.769 0.188 70.08);
+  --destructive: oklch(0.505 0.213 27.518);
+
+  --surface: oklch(0.21 0.006 285.885); /* zinc-900 */
+  --surface-foreground: oklch(0.985 0 0);
+
+  --selection: oklch(0.985 0 0);
+  --selection-foreground: oklch(0.141 0.005 285.823);
+}
+
+/* --- Full-bleed hairlines --------------------------------------------------
+ * The signature move. A panel is only `max-w-3xl`, but its top and bottom
+ * rules run the full width of the viewport. Achieved with a pseudo-element
+ * 200vw wide offset -100vw, pushed behind content with a negative z-index.
+ * -------------------------------------------------------------------------*/
+
+@utility screen-line-top {
+  @apply relative;
+  &:before {
+    content: '';
+    @apply absolute top-0 left-[-100vw] -z-1 h-px w-[200vw] bg-line;
+  }
+}
+
+@utility screen-line-bottom {
+  @apply relative;
+  &:after {
+    content: '';
+    @apply absolute bottom-0 left-[-100vw] -z-1 h-px w-[200vw] bg-line;
+  }
+}
+
+/* Dashed variants — 4px dash, 2px gap. Used for interior rules so they read
+ * as secondary to the solid panel edges. */
+@utility screen-dashed-line-top {
+  @apply screen-line-top;
+  &:before {
+    content: '';
+    @apply bg-inherit bg-[linear-gradient(to_right,var(--line)_4px,transparent_2px)] bg-size-[6px_1px] bg-repeat-x;
+  }
+}
+
+@utility screen-dashed-line-bottom {
+  @apply screen-line-bottom;
+  &:after {
+    content: '';
+    @apply bg-inherit bg-[linear-gradient(to_right,var(--line)_4px,transparent_2px)] bg-size-[6px_1px] bg-repeat-x;
+  }
+}
+
+@utility screen-line-top-none {
+  @apply before:content-none;
+}
+
+@utility screen-line-bottom-none {
+  @apply after:content-none;
+}
+
+/* Vertical dashed rule — the gutter divider inside Overview and Stack. */
+@utility dashed-rule-y {
+  @apply bg-[linear-gradient(to_bottom,var(--line)_4px,transparent_2px)] bg-size-[1px_6px] bg-repeat-y;
+}
+
+/* --- Diagonal stripes ------------------------------------------------------
+ * The band that separates sections. Driven from --line so it tracks the theme
+ * rather than pinning fixed neutrals.
+ * -------------------------------------------------------------------------*/
+
+@utility diagonal-stripes {
+  @apply [--pattern-foreground:var(--color-line)]/56;
+  @apply bg-[repeating-linear-gradient(315deg,var(--pattern-foreground)_0,var(--pattern-foreground)_1px,transparent_0,transparent_50%)] bg-size-[10px_10px];
+}
+
+@utility stripe-divider {
+  @apply relative h-8;
+  &:before {
+    content: '';
+    @apply absolute left-[-100vw] -z-1 h-full w-[200vw] diagonal-stripes;
+  }
+}
+
+
+/* --- Links ---------------------------------------------------------------- */
+
+@utility link {
+  @apply decoration-1 underline-offset-3 hover:underline;
+}
+
+@utility link-underline {
+  @apply underline decoration-current/30 decoration-1 underline-offset-3 transition-colors hover:decoration-current;
+}
+
+/* --- Base ----------------------------------------------------------------- */
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    @apply border-border outline-ring/50;
+  }
+
+  ::selection {
+    @apply bg-selection text-selection-foreground;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    /* Never let the browser fake a weight — the variable font has every real
+     * weight, and synthesised bold is what makes text look slightly off. */
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  [id] {
+    @apply scroll-mt-18;
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 5px;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+}
+
+/* --- Page transitions ------------------------------------------------------
+ * Driven by <ClientRouter /> in the base layout, which uses same-document
+ * view transitions (~88% support) and falls back to a simulated animation
+ * elsewhere. The native cross-document `@view-transition` at-rule is not
+ * Baseline — Firefox and Safari support is incomplete — so it would leave a
+ * meaningful share of visitors with no transition at all.
+ * -------------------------------------------------------------------------*/
+
+/* Morph targets. `transition:name` on a project card image and its detail-page
+ * hero share a name, so the browser tweens between them across navigation. */
+@utility morph-target {
+  view-transition-name: var(--morph-name);
+  contain: layout;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+
+  html {
+    @apply scroll-auto;
+  }
+}

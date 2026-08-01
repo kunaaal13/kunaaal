@@ -1,0 +1,65 @@
+---
+title: End-to-end types with Hono RPC
+description: Getting a typed client from a Workers API without generating anything, and where the approach runs out.
+publishedAt: 2026-06-09
+tags: ['Hono', 'Cloudflare', 'TypeScript']
+---
+
+Hono's RPC mode gives you a typed client for your API without a codegen step.
+The types flow from the route definitions straight into the client, so renaming
+a field breaks the build at every call site.
+
+## The setup
+
+Export the app type from the server:
+
+```ts
+const routes = app
+  .get('/events', (c) => c.json({ events: [] }))
+  .post('/events', zValidator('json', createEventSchema), (c) => {
+    const body = c.req.valid('json') // typed from the schema
+    return c.json({ id: '1' }, 201)
+  })
+
+export type AppType = typeof routes
+```
+
+Then consume it:
+
+```ts
+import { hc } from 'hono/client'
+const client = hc<AppType>('https://api.example.com')
+
+const res = await client.events.$post({ json: { name: 'Walk' } })
+```
+
+The `json` argument is typed from the Zod schema on the server. No generated
+file, no build step, no drift.
+
+## The part that matters
+
+Chaining is not stylistic. `typeof routes` only carries the routes present on
+the value it is applied to, so this:
+
+```ts
+app.get('/a', handler)
+app.get('/b', handler)
+export type AppType = typeof app // only knows about the base app
+```
+
+silently produces a client missing both routes. It type-checks. It fails at
+runtime. Chain the definitions or the whole approach quietly stops working.
+
+## Where it runs out
+
+**Compile time scales with route count.** Past a few dozen routes the inferred
+type gets large enough that editor responsiveness suffers. Splitting into
+sub-apps and composing helps, but it is a real ceiling.
+
+**It assumes a monorepo.** The client needs `typeof routes` from the server's
+source. If the consumer is a separate repo, you are back to publishing types or
+generating a spec — at which point OpenAPI is the better tool.
+
+For a monorepo with one API and one or two clients, though, deleting the codegen
+step is worth a lot. The schema is the contract, and there is exactly one copy
+of it.

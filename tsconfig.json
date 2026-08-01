@@ -1,0 +1,15 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "include": [".astro/types.d.ts", "**/*"],
+  "exclude": ["dist", "node_modules", ".agents", ".claude"],
+  "compilerOptions": {
+    "strictNullChecks": true,
+    "allowJs": true,
+    "baseUrl": ".",
+    // FSD on Astro uses a single `@/*` alias rather than one per layer.
+    // See .agents/skills/feature-sliced-design/references/framework-integration.md
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}

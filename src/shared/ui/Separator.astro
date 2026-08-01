@@ -1,0 +1,19 @@
+---
+import { cn } from '@/shared/lib/cn'
+
+/**
+ * The diagonal-stripe band between panels. Bleeds to the viewport edge so the
+ * rhythm of framed section / open band continues past the content column.
+ */
+interface Props {
+  class?: string
+}
+
+const { class: className } = Astro.props
+---
+
+<div
+  aria-hidden="true"
+  class={cn('stripe-divider h-8 w-full border-x border-line', className)}
+>
+</div>

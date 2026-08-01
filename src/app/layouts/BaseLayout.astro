@@ -1,0 +1,166 @@
+---
+import { ClientRouter } from 'astro:transitions'
+import '@/app/styles/global.css'
+import SiteHeader from '@/app/ui/SiteHeader.astro'
+import SiteQuote from '@/app/ui/SiteQuote.astro'
+import SiteFooter from '@/app/ui/SiteFooter.astro'
+import JsonLd from '@/shared/ui/JsonLd.astro'
+import { SITE } from '@/shared/config/site'
+import { PROFILE } from '@/entities/profile'
+
+interface Props {
+  title?: string
+  description?: string
+  /** Absolute or site-relative OG image. Falls back to the default card. */
+  image?: string
+  /** Set on article pages so the head can emit article: meta. */
+  publishedAt?: Date
+  updatedAt?: Date
+  /** Omit from search indexes. */
+  noindex?: boolean
+  /** schema.org graph for this page. Omit for pages that add nothing. */
+  jsonLd?: unknown
+}
+
+const {
+  title,
+  description = SITE.description,
+  image = '/og/default.png',
+  publishedAt,
+  updatedAt,
+  noindex = false,
+  jsonLd,
+} = Astro.props
+
+const pageTitle = title ? `${title} — ${SITE.name}` : SITE.title
+const canonical = new URL(Astro.url.pathname, Astro.site ?? SITE.url)
+const ogImage = new URL(image, Astro.site ?? SITE.url)
+---
+
+<!doctype html>
+<html lang={SITE.locale} class="scroll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {/* Generated from Geist Pixel by scripts/build-mark.mjs. SVG first, so a
+        modern browser never touches the raster fallbacks. */}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/favicon-16x16.png" sizes="16x16" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={`${SITE.name} — Blog`}
+      href="/rss.xml"
+    />
+
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="author" content={PROFILE.fullName} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+    <meta property="og:type" content={publishedAt ? 'article' : 'website'} />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    {
+      publishedAt && (
+        <meta
+          property="article:published_time"
+          content={publishedAt.toISOString()}
+        />
+      )
+    }
+    {
+      updatedAt && (
+        <meta
+          property="article:modified_time"
+          content={updatedAt.toISOString()}
+        />
+      )
+    }
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <meta
+      name="theme-color"
+      content={SITE.themeColor.light}
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content={SITE.themeColor.dark}
+      media="(prefers-color-scheme: dark)"
+    />
+
+    {/*
+      Applies the stored theme before first paint. Must stay inline and
+      render-blocking — deferring it produces a flash of the wrong theme.
+      `is:inline` keeps Astro from bundling and thus deferring it.
+    */}
+    <script is:inline>
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('theme')
+          var dark =
+            stored === 'dark' ||
+            (!stored &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', dark)
+        } catch (e) {}
+      })()
+    </script>
+
+    {jsonLd && <JsonLd data={jsonLd} />}
+
+    <ClientRouter />
+  </head>
+
+  <body class="bg-background text-foreground">
+    <div class="relative isolate">
+      <SiteHeader />
+      <main class="max-w-screen overflow-x-clip px-2">
+        <slot />
+      </main>
+
+      {/*
+        Sits between the content and the footer on every page.
+
+        `server:defer` makes this a server island: the page around it stays
+        static HTML served from the CDN, while this one fragment is rendered
+        per request — so the quote changes on every visit rather than once per
+        deploy. The fallback holds the exact height of the real thing, so
+        nothing shifts when it swaps in.
+      */}
+      <div class="max-w-screen overflow-x-clip px-2">
+        <div
+          class="screen-line-top screen-line-bottom mx-auto border-x border-line md:max-w-3xl"
+        >
+          <SiteQuote server:defer>
+            <div slot="fallback" class="h-[19.5rem]" aria-hidden="true"></div>
+          </SiteQuote>
+        </div>
+      </div>
+
+      <SiteFooter />
+    </div>
+
+    {/*
+      Re-applies the theme class after a client-side navigation swaps <html>.
+      Without this the theme resets on every in-site link click.
+    */}
+    <script>
+      import { applyStoredTheme } from '@/features/theme-toggle'
+      document.addEventListener('astro:after-swap', applyStoredTheme)
+    </script>
+  </body>
+</html>

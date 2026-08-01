@@ -1,0 +1,7 @@
+export { default as Icon } from './Icon.astro'
+export { default as Panel } from './Panel.astro'
+export { default as PanelContent } from './PanelContent.astro'
+export { default as PanelHeader } from './PanelHeader.astro'
+export { default as PanelTitle } from './PanelTitle.astro'
+export { default as Separator } from './Separator.astro'
+export { default as Tag } from './Tag.astro'

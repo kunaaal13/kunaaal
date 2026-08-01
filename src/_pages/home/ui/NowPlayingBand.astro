@@ -1,0 +1,18 @@
+---
+import { SpotifyNowPlaying } from '@/features/spotify-now-playing'
+---
+
+{/*
+  Carries border-x like every other section, so the column rules run unbroken
+  down the page — without it the grid visibly stops here and starts again.
+
+  The widget floats rather than sitting in a layout row: it expands from a pill
+  into a tall card with the vinyl overhanging upward, and in normal flow that
+  growth would shove everything below it down the page on every click. Pinning
+  it to the bottom of a fixed-height band lets it grow over the band instead.
+*/}
+<div class="relative z-40 h-24 w-full border-x border-line select-none">
+  <div class="absolute inset-x-0 bottom-3 mx-auto flex w-fit justify-center">
+    <SpotifyNowPlaying client:visible />
+  </div>
+</div>

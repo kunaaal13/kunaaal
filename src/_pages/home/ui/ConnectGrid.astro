@@ -1,0 +1,135 @@
+---
+import Panel from '@/shared/ui/Panel.astro'
+import PanelHeader from '@/shared/ui/PanelHeader.astro'
+import PanelTitle from '@/shared/ui/PanelTitle.astro'
+import Icon from '@/shared/ui/Icon.astro'
+import { SOCIAL_LINKS } from '@/shared/config/social'
+import { getEmail } from '@/entities/profile'
+
+const email = getEmail()
+
+/**
+ * `icon` is a brand mark; `glyph` is one of our own outline icons, used where
+ * no brand applies. Exactly one of the two is set per row.
+ */
+type Glyph = 'send' | 'mail'
+
+const links: {
+  name: string
+  href: string
+  icon?: string
+  glyph?: Glyph
+  brandColor?: boolean
+  external: boolean
+}[] = [
+  { name: 'Contact', href: '/contact', glyph: 'send', external: false },
+  ...SOCIAL_LINKS.map((social) => ({
+    name: social.title,
+    href: social.href,
+    icon: social.icon,
+    brandColor: Boolean(social.brandColor),
+    external: true,
+  })),
+  {
+    // A neutral envelope, not a Gmail mark. The row is "Email" — the provider
+    // is an implementation detail, and a Google logo here would sit oddly
+    // beside GitHub, X and LinkedIn, which are places you actually are.
+    name: 'Email',
+    href: `mailto:${email}`,
+    glyph: 'mail',
+    external: true,
+  },
+]
+---
+
+<Panel id="connect">
+  <PanelHeader>
+    <PanelTitle id="connect">Connect</PanelTitle>
+  </PanelHeader>
+
+  {/*
+    Three across on desktop, two on tablet, one on mobile. Rules are drawn by
+    the first cell of each row only, so they are never doubled — which means
+    the nth step has to follow the column count at each breakpoint.
+  */}
+  <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+    {
+      links.map((link) => (
+        <li
+          class:list={[
+            'screen-line-bottom relative',
+            'last:screen-line-bottom-none',
+            'sm:nth-[2n]:screen-line-bottom-none sm:nth-[2n+1]:border-r sm:nth-[2n+1]:border-line',
+            'lg:nth-[2n]:screen-line-bottom lg:nth-[3n]:screen-line-bottom-none',
+            'lg:nth-[2n]:border-r lg:nth-[3n]:border-r-0 lg:border-line',
+          ]}
+        >
+          <div class="group flex items-center gap-4 p-4 transition-colors hover:bg-accent-muted">
+            {/* Full-size brand mark in a bordered well — the logo is the
+                recognisable part, so it gets the space rather than a muted
+                glyph tucked beside the label. */}
+            <div class="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-surface">
+              {link.icon && (
+                <Icon name={link.icon} class="size-6" brand={link.brandColor} />
+              )}
+
+              {link.glyph && (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="size-5.5 text-muted-foreground"
+                  aria-hidden="true"
+                >
+                  {link.glyph === 'send' ? (
+                    <>
+                      {/* Paper plane — sending a message. */}
+                      <path d="m22 2-7 20-4-9-9-4Z" />
+                      <path d="M22 2 11 13" />
+                    </>
+                  ) : (
+                    <>
+                      {/* Envelope — a plain address, no provider implied. */}
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <path d="m2 7 10 6 10-6" />
+                    </>
+                  )}
+                </svg>
+              )}
+              <div
+                class="pointer-events-none absolute inset-0 rounded-xl inset-ring-1 inset-ring-black/10 dark:inset-ring-white/15"
+                aria-hidden="true"
+              />
+            </div>
+
+            <h3 class="min-w-0 flex-1 truncate font-medium">
+              <a
+                href={link.href}
+                target={link.external && link.href.startsWith('http') ? '_blank' : undefined}
+                rel="noopener"
+              >
+                <span class="absolute inset-0" aria-hidden="true" />
+                {link.name}
+              </a>
+            </h3>
+
+            <svg
+              class="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M7 17 17 7M7 7h10v10" />
+            </svg>
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+</Panel>

@@ -1,0 +1,87 @@
+---
+import Panel from '@/shared/ui/Panel.astro'
+import { PROFILE } from '@/entities/profile'
+---
+
+<Panel id="cta">
+  <h2 class="sr-only">Get in touch</h2>
+
+  {/*
+    Deliberately not built around the avatar. The previous version put the
+    photo inside the button and hid it on load failure, which left a bare
+    text pill — the whole composition rested on a file that may not exist.
+    This reads as intended whether or not there is an image.
+  */}
+  <div class="relative flex flex-col items-center gap-6 px-6 py-16 text-center">
+    {/* Faint stripe field behind, masked to a soft pool. */}
+    <div
+      class="diagonal-stripes pointer-events-none absolute inset-0 -z-1 opacity-70 mask-[radial-gradient(60%_60%_at_50%_50%,black,transparent)]"
+      aria-hidden="true"
+    >
+    </div>
+
+    <div class="flex flex-col items-center gap-3">
+      <p
+        class="font-mono text-xs tracking-[0.14em] text-muted-foreground uppercase"
+      >
+        Open for work
+      </p>
+      <p
+        class="max-w-md text-2xl leading-snug font-medium text-balance sm:text-3xl"
+      >
+        Building something? Let's talk about it.
+      </p>
+      <p class="max-w-sm text-sm text-balance text-muted-foreground">
+        Freelance projects, full-time roles, or just an interesting problem.
+      </p>
+    </div>
+
+    {/*
+      One action, not two. A secondary email pill split the attention and put
+      a raw address where a decision should be — /contact already lists every
+      channel for anyone who would rather write.
+    */}
+    <a
+      href={PROFILE.scheduling}
+      target="_blank"
+      rel="noopener"
+      class="group relative inline-flex h-13 items-center gap-3 overflow-hidden rounded-full
+             bg-foreground pr-3 pl-6 font-medium text-background
+             shadow-lg shadow-foreground/10 transition-all
+             hover:shadow-xl hover:shadow-foreground/20
+             focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+             focus-visible:ring-offset-background focus-visible:outline-none"
+    >
+      {/* Sheen that sweeps across on hover. */}
+      <span
+        class="pointer-events-none absolute inset-0 -translate-x-full bg-linear-to-r
+               from-transparent via-background/25 to-transparent
+               transition-transform duration-700 group-hover:translate-x-full"
+        aria-hidden="true"></span>
+
+      <span class="relative">Book a call</span>
+
+      <span
+        class="relative flex size-9 items-center justify-center rounded-full
+               bg-background/15 transition-transform group-hover:translate-x-0.5"
+      >
+        <svg
+          class="size-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M5 12h14M13 6l6 6-6 6"></path>
+        </svg>
+      </span>
+    </a>
+
+    <p class="font-mono text-xs text-muted-foreground">
+      30 minutes · pick a slot that suits you
+    </p>
+  </div>
+</Panel>

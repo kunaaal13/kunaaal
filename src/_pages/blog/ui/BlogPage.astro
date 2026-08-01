@@ -1,0 +1,45 @@
+---
+import BaseLayout from '@/app/layouts/BaseLayout.astro'
+import Panel from '@/shared/ui/Panel.astro'
+import PanelHeader from '@/shared/ui/PanelHeader.astro'
+import PanelTitle from '@/shared/ui/PanelTitle.astro'
+import { PostItem, getPosts } from '@/entities/post'
+
+const posts = await getPosts()
+---
+
+<BaseLayout title="Writing" description="Notes on building things for the web.">
+  <div class="mx-auto md:max-w-3xl">
+    <Panel>
+      <PanelHeader>
+        <PanelTitle id="writing" as="h1" sup={posts.length}>Writing</PanelTitle>
+      </PanelHeader>
+
+      {
+        posts.length === 0 ? (
+          <p class="p-8 text-center text-sm text-muted-foreground">
+            Nothing published yet.
+          </p>
+        ) : (
+          <div class="relative py-4">
+            <div
+              class="pointer-events-none absolute inset-0 -z-1 grid grid-cols-2 gap-4 max-sm:hidden"
+              aria-hidden="true"
+            >
+              <div class="border-r border-line" />
+              <div class="border-l border-line" />
+            </div>
+
+            <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {posts.map((post) => (
+                <li class="max-sm:screen-line-top max-sm:screen-line-bottom sm:nth-[2n+1]:screen-line-top sm:nth-[2n+1]:screen-line-bottom">
+                  <PostItem post={post} as="h2" />
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      }
+    </Panel>
+  </div>
+</BaseLayout>

@@ -1,0 +1,301 @@
+---
+/**
+ * The brand mark: a "K" built from slabs lying on the isometric ground plane.
+ *
+ * Two things make this read as a logo rather than a pile of cubes:
+ *
+ * 1. Few, large slabs. An earlier version used a grid of unit cubes and looked
+ *    fussy at any size — the shape is defined by a handful of long pieces.
+ * 2. Diagonal steps overlap by a full edge rather than meeting at a corner.
+ *    Corner-to-corner blocks read as disconnected; overlapping them makes the
+ *    arms continuous limbs.
+ *
+ * ROTATION turns the finished 2D drawing. Rotating the letter about the
+ * vertical axis instead — turning it on the ground plane before projecting —
+ * was tried and does not work: at 45° the letter lies along the plan diagonal,
+ * where the isometric shear cancels exactly and the mark projects as a flat,
+ * head-on view with no depth at all. Turning the drawing keeps the projection
+ * intact, and is safe because occlusion is already baked into the paint order.
+ */
+
+/** Axis-aligned slab on the ground plane: [x0, x1, y0, y1]. */
+const SLABS: [number, number, number, number][] = [
+  [0, 1, 0, 7], // stem
+  [1, 2, 2, 4], // upper arm
+  [2, 3, 1, 3],
+  [3, 5, 0, 2],
+  [1, 2, 3, 5], // lower arm
+  [2, 3, 4, 6],
+  [3, 5, 5, 7],
+]
+
+const UNIT = 40
+const THICKNESS = 0.42
+
+/**
+ * Degrees, applied to the projected drawing.
+ *
+ * 0 leaves the stem almost flat and the letter reads sideways. -60 stands the
+ * stem upright but collapses the mark to 0.54:1, stranding it in a wide
+ * banner. -30 is the middle: a steep stem with the arms opening rightward, at
+ * 1.3:1. Changing this changes the aspect, so the wrapper width below has to
+ * move with it to keep the rendered height stable.
+ */
+const ROTATION = -30
+const RAD = (ROTATION * Math.PI) / 180
+const COS = Math.cos(RAD)
+const SIN = Math.sin(RAD)
+
+/** Isometric projection on a 30° grid: X right-and-down, Y left-and-down, Z up. */
+const project = (x: number, y: number, z: number): [number, number] => {
+  const px = 0.866 * (x - y) * UNIT
+  const py = (0.5 * (x + y) - z) * UNIT
+  return [px * COS - py * SIN, px * SIN + py * COS]
+}
+
+const pts = (points: [number, number][]) =>
+  points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+
+const blocks = SLABS.map(([x0, x1, y0, y1]) => {
+  const t = {
+    a: project(x0, y0, THICKNESS),
+    b: project(x1, y0, THICKNESS),
+    c: project(x1, y1, THICKNESS),
+    d: project(x0, y1, THICKNESS),
+  }
+  const g = {
+    b: project(x1, y0, 0),
+    c: project(x1, y1, 0),
+    d: project(x0, y1, 0),
+  }
+  return {
+    // Painter's order: larger (x + y) is nearer the viewer.
+    order: x0 + y0,
+    top: pts([t.a, t.b, t.c, t.d]),
+    left: pts([t.d, t.c, g.c, g.d]),
+    right: pts([t.b, t.c, g.c, g.b]),
+  }
+}).sort((a, b) => a.order - b.order)
+
+const corners = SLABS.flatMap(([x0, x1, y0, y1]) =>
+  (
+    [
+      [x0, y0],
+      [x1, y0],
+      [x1, y1],
+      [x0, y1],
+    ] as [number, number][]
+  ).flatMap(([x, y]) => [project(x, y, 0), project(x, y, THICKNESS)])
+)
+const xs = corners.map((p) => p[0])
+const ys = corners.map((p) => p[1])
+// Breathing room inside the viewBox. Overall size is set by the wrapper's
+// width, not here — this only controls how tightly the box hugs the artwork.
+const pad = UNIT * 0.25
+const box = {
+  x: Math.min(...xs) - pad,
+  y: Math.min(...ys) - pad,
+  w: Math.max(...xs) - Math.min(...xs) + pad * 2,
+  h: Math.max(...ys) - Math.min(...ys) + pad * 2,
+}
+const viewBox = `${box.x} ${box.y} ${box.w} ${box.h}`
+---
+
+{/*
+  Width-driven: the mark fills its column and its own aspect sets the height.
+  This is the real size control — the SVG is `h-auto`, so height follows from
+  width. Padding the viewBox only shrinks the artwork *inside* a box that stays
+  full-width, which makes the banner taller rather than the mark smaller.
+
+  The small left margin offsets the avatar column: the figure sits in the right
+  column only, so a mark centred there reads right-of-centre against the banner
+  as a whole. Mobile spans both columns, so no offset applies.
+
+  The negative bottom margin shortens the box the layout reserves while the
+  artwork keeps its full height, so the mark spills past the banner rule and
+  paints over it rather than stopping dead at the line. The name block carries
+  z-1 and covers the mark where the two meet. Kept small — enough to cross the
+  rule, not so much that it reaches into the name row.
+
+  The caption lives inside this wrapper, not the parent figure. In the parent
+  it anchored to a box whose height the grid controlled, and drifted below the
+  banner rule.
+*/}
+<div class="relative -mb-[2%] w-full sm:ml-[3%] sm:w-[78%]">
+  <svg
+    data-spotlight-logo
+    viewBox={viewBox}
+    preserveAspectRatio="xMidYMid meet"
+    class="h-auto w-full"
+    fill="none"
+    aria-hidden="true"
+    role="presentation"
+  >
+    <defs>
+      <pattern
+        id="mark-hatch"
+        width="9"
+        height="9"
+        patternUnits="userSpaceOnUse"
+      >
+        <path
+          d="M-1 1l2 -2M0 9l9 -9M8 10l2 -2"
+          stroke="var(--line)"
+          stroke-width="1"></path>
+      </pattern>
+
+      {/* Edge-only copy of the mark, re-stroked by the spotlight below. */}
+      <g id="mark-edges" fill="none">
+        {
+          blocks.map((block) => (
+            <>
+              <polygon points={block.left} />
+              <polygon points={block.right} />
+              <polygon points={block.top} />
+            </>
+          ))
+        }
+      </g>
+
+      {/*
+        The spotlight: a radial gradient whose centre eases toward the cursor,
+        painted as a second stroke over the base outline — so edges brighten as
+        the pointer passes rather than the whole mark changing colour.
+      */}
+      <radialGradient
+        id="mark-spotlight"
+        cx={box.x + box.w / 2}
+        cy={box.y + box.h / 2}
+        r={box.w * 0.42}
+        gradientUnits="userSpaceOnUse"
+      >
+        <stop stop-color="var(--color-zinc-600)" class="dark:[stop-color:#fff]"
+        ></stop>
+        <stop
+          offset="1"
+          stop-color="var(--color-zinc-400)"
+          stop-opacity="0"
+          class="dark:[stop-color:var(--color-zinc-500)]"></stop>
+      </radialGradient>
+    </defs>
+
+    {/*
+      No construction lines. They were here as a drawing-sheet cue, but once
+      the mark grew and rotated they crossed straight through it and read as
+      stray marks rather than guides. The bleed off the edges already does
+      that job.
+    */}
+    {
+      blocks.map((block) => (
+        <g stroke="var(--border)" stroke-width="1.4" stroke-linejoin="round">
+          <polygon points={block.left} fill="url(#mark-hatch)" />
+          <polygon points={block.right} fill="url(#mark-hatch)" />
+          <polygon points={block.top} fill="var(--background)" />
+        </g>
+      ))
+    }
+
+    <use
+      href="#mark-edges"
+      stroke="url(#mark-spotlight)"
+      stroke-width="1.6"
+      stroke-linejoin="round"></use>
+  </svg>
+
+  <figcaption
+    class="pointer-events-none absolute right-0 bottom-0 font-mono text-xs leading-none text-muted-foreground/50 select-none"
+  >
+    FIG_001
+  </figcaption>
+</div>
+
+<script>
+  // Cursor-following spotlight. Vanilla rather than an island: two attribute
+  // writes per frame does not justify a framework runtime. Eased toward the
+  // pointer so the highlight trails instead of snapping, and the rAF loop
+  // stops once settled.
+  const canAnimate =
+    window.matchMedia('(hover: hover)').matches &&
+    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  if (canAnimate) {
+    let svg: SVGSVGElement | null = null
+    let gradient: SVGRadialGradientElement | null = null
+
+    let targetX = 0
+    let targetY = 0
+    let x = 0
+    let y = 0
+    let frame = 0
+
+    const paint = () => {
+      gradient?.setAttribute('cx', String(x))
+      gradient?.setAttribute('cy', String(y))
+    }
+
+    const tick = () => {
+      x += (targetX - x) * 0.12
+      y += (targetY - y) * 0.12
+      paint()
+      frame =
+        Math.abs(targetX - x) > 0.5 || Math.abs(targetY - y) > 0.5
+          ? requestAnimationFrame(tick)
+          : 0
+    }
+
+    /** Ease back to the centre, so the mark reads as unlit when idle. */
+    const rest = () => {
+      if (!svg) return
+      const view = svg.viewBox.baseVal
+      targetX = view.x + view.width / 2
+      targetY = view.y + view.height / 2
+      if (!frame) frame = requestAnimationFrame(tick)
+    }
+
+    // Re-resolved per navigation: the router swaps the DOM, so a reference
+    // captured once goes stale and the effect silently stops working.
+    const resolve = () => {
+      svg = document.querySelector<SVGSVGElement>('[data-spotlight-logo]')
+      gradient =
+        svg?.querySelector<SVGRadialGradientElement>('#mark-spotlight') ?? null
+      // Park it back at rest so a highlight cannot survive a page change.
+      if (svg) {
+        const view = svg.viewBox.baseVal
+        x = targetX = view.x + view.width / 2
+        y = targetY = view.y + view.height / 2
+        paint()
+      }
+    }
+
+    window.addEventListener(
+      'pointermove',
+      (event) => {
+        if (!svg) return
+        const rect = svg.getBoundingClientRect()
+        if (!rect.width || !rect.height) return
+        const view = svg.viewBox.baseVal
+        // Screen position → the SVG's own user coordinates.
+        targetX = view.x + ((event.clientX - rect.left) / rect.width) * view.width
+        targetY = view.y + ((event.clientY - rect.top) / rect.height) * view.height
+        if (!frame) frame = requestAnimationFrame(tick)
+      },
+      { passive: true }
+    )
+
+    /*
+     * Without these the highlight sticks. The loop eases toward wherever the
+     * pointer was last seen, so if the pointer leaves the window no further
+     * events arrive and it freezes mid-mark — lit, permanently. Each of these
+     * is a way the pointer can go away without a final pointermove.
+     */
+    document.addEventListener('pointerleave', rest)
+    document.addEventListener('mouseleave', rest)
+    window.addEventListener('blur', rest)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') rest()
+    })
+
+    resolve()
+    document.addEventListener('astro:page-load', resolve)
+  }
+</script>

@@ -1,0 +1,37 @@
+---
+import { cn } from '@/shared/lib/cn'
+
+/**
+ * A page section. Draws a solid rule above and below that bleeds to the
+ * viewport edge, plus vertical borders at the column edge — which is what
+ * makes a narrow column read as a framed sheet rather than floating text.
+ */
+interface Props {
+  id?: string
+  class?: string
+  /** Suppress the top rule where a panel butts directly against another. */
+  seamlessTop?: boolean
+  /** Suppress the bottom rule. */
+  seamlessBottom?: boolean
+}
+
+const {
+  id,
+  class: className,
+  seamlessTop = false,
+  seamlessBottom = false,
+} = Astro.props
+---
+
+<section
+  id={id}
+  data-slot="panel"
+  class={cn(
+    'relative border-x border-line',
+    seamlessTop ? 'screen-line-top-none' : 'screen-line-top',
+    seamlessBottom ? 'screen-line-bottom-none' : 'screen-line-bottom',
+    className
+  )}
+>
+  <slot />
+</section>

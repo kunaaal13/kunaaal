@@ -1,0 +1,127 @@
+---
+title: Bhaify
+description: A persona-transfer engine — type a plain sentence, get it back in Salman Khan's tweeting voice. The hard part was measuring whether it worked.
+status: live
+featured: true
+order: 2
+period:
+  start: '2026'
+tech: ['SvelteKit', 'Svelte 5', 'Drizzle', 'Neon', 'Tailwind CSS', 'Vercel']
+links:
+  live: 'https://bhaify.vercel.app'
+  github: 'https://github.com/kunaaal13/bhaify'
+---
+
+Not a chatbot. One box, one button, one line back — your message rewritten in a
+very specific voice, as an openly-labelled fan parody. It never answers you,
+never converses, never adds a claim of its own.
+
+The persona *is* the product, so every interesting problem in it turned out to be
+a measurement problem.
+
+## The corpus comes first
+
+52 verbatim tweets, 2010–2026, extracted from a fan site's embedded RSC payload
+by script rather than retyped.
+
+- Three records came back clipped — two contained a `"` that killed the
+  extractor's string match, one was truncated by X's own "Show more" and had to
+  be recovered from press coverage.
+- `verify-corpus.ts` accepts a recovered record only if the scraped text is a
+  strict *prefix* of it. A recovery can extend a record, never quietly rewrite
+  one.
+- Grounding data only. It feeds few-shot selection and eval scoring; no page ever
+  renders it.
+
+## The design is the joke
+
+Borrowed x.ai's language wholesale — near-black canvas, white outline pills, one
+geometric sans at weight 400, uppercase tracked mono labels. Its own design doc
+calls the effect "a research lab announcing its work rather than a SaaS
+marketing site."
+
+The voice it wraps is the opposite: loud, filmy, maximalist. Play the container
+completely straight and the content does all the work. A Bollywood-gold
+treatment would be more obvious and much less funny.
+
+## The eval harness was certifying the failure
+
+It reported **28 of 31 passing** on output that felt nothing like him.
+
+- A "style marker" was a match on `/aa|oo|uu/` or the token `" ."` — so pure
+  Hindi transliteration scored for free, and a three-beat line banked three
+  markers before saying anything.
+- "Has a structural move" passed on `segments >= 3`, which *is* the three-beat
+  template it was supposed to catch.
+- A `0.5×–2.5×` length band enforced the clipped rhythm that made everything read
+  like a Mad Lib, against a corpus that rambles to a median of 18 words.
+
+It was measuring fidelity, which was already fine, and calling it persona.
+
+The rebuild splits them into two axes that fail independently:
+
+| Axis | Scope | Checks |
+| --- | --- | --- |
+| Fidelity | per output | a question stays a question; names and numbers survive; no assistant-voice tells |
+| Style | per batch | compression, English-base share, rhythm, median length, sign-off rate, phrase repetition |
+
+Style has to be per batch because **inconsistency is the style**. One line that
+compresses nothing is fine; a batch where nothing compresses is broken.
+
+One metric earns its place by refusing to average — `pureHindiShare`. A batch
+averaging 9% English isn't 31 lines at 9%, it's a third at 30% and a third at
+zero. The zeroes are the broken output hiding behind the good ones.
+
+## What the numbers found
+
+- **The few-shots were teaching the wrong task.** 1.4 SMS tokens per 100 words
+  and 0.2% English function words, against a corpus at 8.5–13 and ~19%. Fifty
+  hand-written examples were demonstrating *translate this to Hindi*.
+- **The style guide was decoration.** It asked for sign-offs under 10%; the
+  examples used them 20% of the time and live output hit 45%. New rule: anything
+  asserted in `style-guide.ts` must be visible in `examples.ts`.
+- **The deterministic quirk pass was inert.** Its lexicon keys on English
+  function words and the examples were teaching Hindi, so nothing matched — quirk
+  density was 0 on 18 of 29 live rows, and raw-vs-quirkified metrics were
+  identical on every axis. Surface polish can't fix a voice; it can only finish
+  one.
+- **Two transforms read as bugs, not voice.** The corpus capitalises mid-sentence
+  under rhetorical stress. A uniform per-word probability can't tell stress from
+  filler, so production produced "Roz rath ko Loud music".
+
+## Choosing the slower model on purpose
+
+12 cases, variant shapes rotated:
+
+| Model | Compression | English-base | Pure Hindi | Gate | Latency |
+| --- | --- | --- | --- | --- | --- |
+| `gemini-flash-lite` | 3.4 /100w | 5% | **50%** | fail | 1.1s |
+| `gemini-flash` (capped) | 13.0 /100w | 19% | 0% | pass | 9.3s |
+| *corpus reference* | 8.5 /100w | 19% | — | — | — |
+
+flash-lite doesn't just score lower — half its output is a Hindi translation,
+the exact failure that made the product feel wrong. So the primary is ~8× slower
+and 503s on 5 of 12 calls. 503 is retryable, so the chain degrades to the fast
+one automatically.
+
+Capping the reasoning budget is what made it viable, and the working value isn't
+the obvious one: `'none'` → HTTP 400, `'low'` → 98 tokens to emit "ok",
+`'minimal'` → 8, omitted → 117.
+
+## Smaller decisions
+
+- **Variant slots.** A response cache and randomised style cancel out if the key
+  is just the input hash. Three slots per key instead; regenerate fills the next
+  empty one, then cycles them free. Each slot binds a *different shape* — run-on,
+  one-liner, pivot — because seed variation alone produced three rewordings of
+  the same sentence.
+- **No AI SDK.** One non-streaming call that must return an id synchronously.
+  Gemini's OpenAI-compatible endpoint means both providers take an identical
+  payload, so the fallback chain is a loop over a table.
+- **Injection defence isn't a coin flip.** User text sits inside
+  `<message_to_bhaify>`, with the closing instruction *after* it. Two adversarial
+  few-shots are pinned into every request — if the sampler could drop them, it
+  would drop them on the request where they matter.
+- **Share cards stay plainly ours.** A pixel-perfect fake tweet screenshot turns
+  parody into a fabricated quote. Own chrome, a `BHAIFIED` stamp, disclaimer
+  rendered *into* the image — OG cards travel without their page.

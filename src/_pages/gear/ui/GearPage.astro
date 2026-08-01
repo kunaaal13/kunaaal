@@ -1,0 +1,75 @@
+---
+import BaseLayout from '@/app/layouts/BaseLayout.astro'
+import Panel from '@/shared/ui/Panel.astro'
+import PanelHeader from '@/shared/ui/PanelHeader.astro'
+import PanelTitle from '@/shared/ui/PanelTitle.astro'
+import { GEAR } from '@/shared/config/gear'
+---
+
+<BaseLayout
+  title="Gear"
+  description="The hardware, editor and apps I actually use."
+>
+  <div class="mx-auto md:max-w-3xl">
+    <Panel>
+      <PanelHeader>
+        <PanelTitle id="gear" as="h1">Gear</PanelTitle>
+      </PanelHeader>
+
+      <div class="relative [--col-left:--spacing(48)]">
+        <div
+          aria-hidden="true"
+          class="dashed-rule-y pointer-events-none absolute inset-y-0 left-(--col-left) -z-1 w-px max-sm:hidden"
+        >
+        </div>
+
+        {
+          GEAR.map((group, index) => (
+            <div class="grid items-start gap-y-2 border-b border-line py-4 last:border-none sm:grid-cols-[var(--col-left)_1fr]">
+              <h2 class="pl-4 text-sm/6 font-normal text-muted-foreground">
+                <span
+                  class="mr-1.5 font-mono text-muted-foreground/50 select-none"
+                  aria-hidden="true"
+                >
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                {group.category}
+              </h2>
+
+              <ul class="flex flex-col gap-3 px-4">
+                {group.items.map((item) => (
+                  <li class="flex flex-col gap-0.5">
+                    <div class="flex flex-wrap items-baseline gap-2">
+                      <h3 class="font-medium">
+                        {item.href ? (
+                          <a
+                            class="link"
+                            href={item.href}
+                            target="_blank"
+                            rel="noopener"
+                          >
+                            {item.name}
+                          </a>
+                        ) : (
+                          item.name
+                        )}
+                      </h3>
+                      {item.detail && (
+                        <span class="font-mono text-xs text-muted-foreground">
+                          {item.detail}
+                        </span>
+                      )}
+                    </div>
+                    {item.note && (
+                      <p class="text-sm text-muted-foreground">{item.note}</p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        }
+      </div>
+    </Panel>
+  </div>
+</BaseLayout>

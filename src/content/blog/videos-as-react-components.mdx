@@ -1,0 +1,73 @@
+---
+title: Videos as React components
+description: Designers were hand-building the same motion story every week in After Effects. Remotion turned it into a component that takes props.
+publishedAt: 2026-04-02
+tags: ['Remotion', 'React', 'Node.js']
+---
+
+Every week our designers built five or six motion stories in After Effects.
+Same template each time: pull the assets, align the text, export, and redo it
+whenever a name or a photo changed. The work wasn't creative — it was
+find-and-replace with a render step.
+
+## Remotion
+
+Remotion's pitch is that you code a video the way you code a website. It
+renders React frame by frame and stitches the frames into a file. Since the
+stack was already React, a video became a component that takes props.
+
+```tsx
+export function BadgeStory({ name, photo, badge }: Props) {
+  const frame = useCurrentFrame()
+  const { fps } = useVideoConfig()
+
+  // spring() for the pop, interpolate() for the fade — both driven by
+  // the current frame rather than wall-clock time, so a render is
+  // deterministic and a dropped frame cannot desync anything.
+  const scale = spring({ frame, fps, config: { damping: 12 } })
+  const opacity = interpolate(frame, [0, 20], [0, 1], {
+    extrapolateRight: 'clamp',
+  })
+
+  return (
+    <AbsoluteFill style={{ opacity }}>
+      <Img src={photo} style={{ transform: `scale(${scale})` }} />
+      <h1>{name}</h1>
+      <Audio src={badge.sound} />
+    </AbsoluteFill>
+  )
+}
+```
+
+Props in, video out. A new story is a new row of data, not a new afternoon.
+
+The member announcement story went further — cube rotations at 90° between
+members, animated backgrounds, counters ticking up. All of it just React,
+driven by the frame number.
+
+## Where it broke
+
+In production, rendering is CPU-bound and Node is single-threaded. Frame-by-frame
+rendering on the main thread meant a render blocked everything else: API
+responses crawled and requests started timing out. One person generating a
+video degraded the service for everyone.
+
+## Worker threads, not a queue
+
+The obvious answer was a job queue — BullMQ, Redis, workers, a dashboard. We
+tried **worker threads** first.
+
+Each render runs in its own thread, so the main process stays free to serve
+requests. Ten simultaneous renders no longer touched API latency.
+
+A queue would have added Redis, a worker deployment, job lifecycle handling and
+a new class of failure, and at our volume it would have solved a problem we
+didn't have. Queues earn their keep when you need prioritisation, retries
+across restarts, or more work than one machine can hold. We needed none of
+that yet — the point was only to get rendering off the request path.
+
+## What's left
+
+Asset weight is the next bottleneck: WebP for images, H.265 for video. And if
+volume grows to where renders need prioritising, that's the point a queue
+starts paying for itself — not before.
