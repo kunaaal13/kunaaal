@@ -60,7 +60,11 @@ export const PROFILE: Profile = {
   emailB64: 'a3VuYWFhbC5yYW9AZ21haWwuY29t',
   website: 'https://kunaaal.com', // TODO(kunal): confirm the domain
   scheduling: 'https://cal.com/kunaaa13/30min',
-  avatar: '/avatar.jpg', // TODO(kunal): drop a file at public/avatar.jpg
+  // Head-and-shoulders crop of the illustrated portrait, square at 512px so a
+  // 2x 144px circle still has pixels to spare. Served from public/ rather than
+  // src/ assets because the header renders it as a plain <img> with an initials
+  // fallback, and astro:assets would take the src out of our hands.
+  avatar: '/avatar.jpg',
   availableForWork: true,
   about: `
 Software engineer at [UIX Labs](https://uixlabs.co), where I build [Morphic](https://morphic.com) — a GenAI studio for film — and co-founder of [Essel](https://essel.ai). I wrote the [Svelte adapter for TanStack Hotkeys](https://github.com/TanStack/hotkeys/pull/45), so if you use keyboard shortcuts in a Svelte app, that's mine.
