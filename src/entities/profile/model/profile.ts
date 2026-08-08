@@ -59,7 +59,7 @@ export const PROFILE: Profile = {
   // the one you want people writing to.
   emailB64: 'a3VuYWFhbC5yYW9AZ21haWwuY29t',
   website: 'https://kunaaal.com', // TODO(kunal): confirm the domain
-  scheduling: 'https://cal.com/kunaaa13/30min',
+  scheduling: 'https://cal.com/kunaaal/30min',
   // Head-and-shoulders crop of the illustrated portrait, square at 512px so a
   // 2x 144px circle still has pixels to spare. Served from public/ rather than
   // src/ assets because the header renders it as a plain <img> with an initials

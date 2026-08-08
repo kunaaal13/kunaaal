@@ -62,10 +62,12 @@ Building [Morphic](https://morphic.com), a GenAI studio for film — train chara
 Air Cargo Management OS.
 
 - Built a design system from scratch and the reusable UI modules on top of it.
-- Engineered the hard surfaces: multi-step forms, dynamic tables, real-time capacity dashboards, automated route generation and a validation rules engine.
+- Built the RBAC layer for the frontend — routes, actions and individual fields all render against the user's role, so one codebase serves every persona from ground staff to network admins.
+- Engineered schema-validated multi-step forms for the messiest workflows in the domain: conditional branches, cross-step dependencies and server-driven field rules, with validation that catches errors at the step where they happen.
+- Shipped the other hard surfaces: dynamic tables, real-time capacity dashboards, automated route generation and a validation rules engine.
 - Delivered a responsive frontend architecture spanning configuration, inventory and execution — the work that digitised an entire air cargo network.
 `.trim(),
-        skills: ['React', 'TypeScript', 'shadcn/ui', 'Design Systems'],
+        skills: ['React', 'TypeScript', 'RBAC', 'shadcn/ui', 'Design Systems'],
       },
     ],
   },

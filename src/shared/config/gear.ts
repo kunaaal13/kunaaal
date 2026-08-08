@@ -24,7 +24,7 @@ export const GEAR: GearGroup[] = [
         name: 'LG UltraFine 27UP850K',
         href: 'https://www.lg.com/in/monitors/lg-27up850n-w',
         detail: '27" 4K IPS',
-        note: 'One USB-C cable for picture, power and peripherals. 95% DCI-P3 and DisplayHDR 400, which is enough to trust colour without pretending it is a reference display.',
+        note: 'One USB-C cable and the desk is set up — display, power, peripherals.',
       },
       {
         name: 'AirPods Pro 2',
@@ -46,6 +46,7 @@ export const GEAR: GearGroup[] = [
         name: 'Warp',
         href: 'https://warp.dev',
         detail: 'Terminal',
+        note: 'Where my agents live — every Claude Code session runs out of a Warp pane.',
       },
       {
         name: 'Claude Code',
@@ -57,11 +58,36 @@ export const GEAR: GearGroup[] = [
   {
     category: 'Daily drivers',
     items: [
-      { name: 'Dia', href: 'https://diabrowser.com', detail: 'Browser' },
-      { name: 'Raycast', href: 'https://raycast.com', detail: 'Launcher' },
-      { name: 'Linear', href: 'https://linear.app', detail: 'Issues' },
-      { name: 'Slack', href: 'https://slack.com', detail: 'Work chat' },
-      { name: 'Figma', href: 'https://figma.com', detail: 'Design' },
+      {
+        name: 'Dia',
+        href: 'https://diabrowser.com',
+        detail: 'Browser',
+        note: 'Tabs tuck into a sidebar and the page gets the whole screen.',
+      },
+      {
+        name: 'Raycast',
+        href: 'https://raycast.com',
+        detail: 'Launcher',
+        note: 'Launcher, clipboard history and window management — three utilities I no longer install.',
+      },
+      {
+        name: 'Linear',
+        href: 'https://linear.app',
+        detail: 'Issues',
+        note: 'Filing an issue costs five seconds, so things actually get filed.',
+      },
+      {
+        name: 'Slack',
+        href: 'https://slack.com',
+        detail: 'Work chat',
+        note: 'Where every decision eventually surfaces, whatever tool it started in.',
+      },
+      {
+        name: 'Figma',
+        href: 'https://figma.com',
+        detail: 'Design',
+        note: 'Exact values straight from the file instead of guessing off a screenshot.',
+      },
       {
         name: 'Mole',
         href: 'https://github.com/tw93/Mole',
