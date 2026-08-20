@@ -40,6 +40,7 @@ export const EXPERIENCES: Experience[] = [
 Building [Morphic](https://morphic.com), a GenAI studio for film — train characters, edit images and video, generate shots.
 
 - Own large parts of the SvelteKit studio: the generation canvas, workflow editor, and the collaborative document and chat surfaces.
+- Created Figma-like threaded comments for Morphic, including real-time updates and collaborative discussion workflows.
 - Built passwordless auth with one-time codes and passkeys, and the organisation model behind cross-org sharing and permissions.
 - Shipped billing end to end — plans, seat-aware upgrades, credit limits and enterprise tiers.
 - Work across to the backend for durable pipelines, where one render fans out across models and has to survive minutes of work without dropping it.
