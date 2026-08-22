@@ -1,4 +1,9 @@
 import type { APIRoute } from 'astro'
+import {
+  SPOTIFY_CLIENT_ID,
+  SPOTIFY_CLIENT_SECRET,
+  SPOTIFY_REFRESH_TOKEN,
+} from 'astro:env/server'
 import { getNowPlaying } from '@/features/spotify-now-playing'
 
 // Needs a runtime: the refresh token must never reach the browser.
@@ -6,9 +11,9 @@ export const prerender = false
 
 export const GET: APIRoute = async () => {
   const track = await getNowPlaying({
-    clientId: import.meta.env.SPOTIFY_CLIENT_ID,
-    clientSecret: import.meta.env.SPOTIFY_CLIENT_SECRET,
-    refreshToken: import.meta.env.SPOTIFY_REFRESH_TOKEN,
+    clientId: SPOTIFY_CLIENT_ID,
+    clientSecret: SPOTIFY_CLIENT_SECRET,
+    refreshToken: SPOTIFY_REFRESH_TOKEN,
   })
 
   return new Response(JSON.stringify(track), {

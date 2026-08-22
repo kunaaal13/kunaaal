@@ -58,7 +58,7 @@ export const TECH_STACK: TechItem[] = [
   { title: 'Vitest', href: 'https://vitest.dev', icon: 'siVitest', categories: ['Infra & Tooling'] },
   { title: 'Storybook', href: 'https://storybook.js.org', icon: 'siStorybook', categories: ['Infra & Tooling'] },
   { title: 'Git', href: 'https://git-scm.com', icon: 'siGit', categories: ['Infra & Tooling'] },
-  { title: 'Claude Code', href: 'https://claude.ai/code', icon: 'siAnthropic', categories: ['Infra & Tooling'] },
+  { title: 'Pi', href: 'https://pi.dev', categories: ['Infra & Tooling'] },
 
   // Design
   { title: 'Figma', href: 'https://figma.com', icon: 'siFigma', categories: ['Design'] },

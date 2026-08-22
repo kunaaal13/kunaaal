@@ -11,8 +11,8 @@ export interface NowPlaying {
 }
 
 const TOKEN_URL = 'https://accounts.spotify.com/api/token'
-const NOW_PLAYING_URL =
-  'https://api.spotify.com/v1/me/player/currently-playing'
+const RECENTLY_PLAYED_URL =
+  'https://api.spotify.com/v1/me/player/recently-played?limit=1'
 
 interface SpotifyEnv {
   clientId?: string
@@ -48,6 +48,71 @@ async function getAccessToken(env: SpotifyEnv): Promise<string | null> {
   return data.access_token ?? null
 }
 
+interface SpotifyTrack {
+  name?: string
+  artists?: { name?: string }[]
+  album?: {
+    name?: string
+    images?: { url: string; width?: number }[]
+  }
+  external_urls?: { spotify?: string }
+  duration_ms?: number
+}
+
+/** Convert Spotify's track shape into the small client-facing contract. */
+function toNowPlaying(
+  track: SpotifyTrack | undefined,
+  isPlaying: boolean,
+  progressMs = 0
+): NowPlaying | null {
+  if (!track?.name) return null
+
+  /*
+   * Pick the widest artwork, by width rather than array position.
+   *
+   * Spotify orders images largest-first — typically 640, 300, 64 — so
+   * `.at(-1)` returns the 64px thumbnail. Sorting by width also survives
+   * Spotify changing the order or returning a shorter list.
+   */
+  const artwork = (track.album?.images ?? []).reduce<
+    { url: string; width?: number } | undefined
+  >(
+    (widest, image) =>
+      (image.width ?? 0) > (widest?.width ?? 0) ? image : widest,
+    undefined
+  )
+
+  return {
+    isPlaying,
+    title: track.name,
+    artist: track.artists
+      ?.map((artist) => artist.name)
+      .filter(Boolean)
+      .join(', '),
+    album: track.album?.name,
+    albumArt: artwork?.url,
+    songUrl: track.external_urls?.spotify,
+    progressMs,
+    durationMs: track.duration_ms ?? 0,
+  }
+}
+
+async function getLatestTrack(token: string): Promise<NowPlaying | null> {
+  const response = await fetch(RECENTLY_PLAYED_URL, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+
+  if (!response.ok) return null
+
+  const data = (await response.json()) as {
+    items?: { track?: SpotifyTrack }[]
+  }
+
+  // Widget intentionally treats latest history item as active. This keeps the
+  // endpoint to one Spotify request and gives the card stable content.
+  return toNowPlaying(data.items?.[0]?.track, true)
+}
+
 export async function getNowPlaying(env: SpotifyEnv): Promise<NowPlaying> {
   const silent: NowPlaying = { isPlaying: false }
 
@@ -55,44 +120,7 @@ export async function getNowPlaying(env: SpotifyEnv): Promise<NowPlaying> {
     const token = await getAccessToken(env)
     if (!token) return silent
 
-    const response = await fetch(NOW_PLAYING_URL, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-
-    // 204 means nothing is playing; 202 means the device is waking up.
-    if (response.status === 204 || response.status === 202) return silent
-    if (!response.ok) return silent
-
-    const data = (await response.json()) as any
-    if (!data?.item) return silent
-
-    /*
-     * Pick the widest artwork, by width rather than array position.
-     *
-     * Spotify orders images largest-first — typically 640, 300, 64 — so
-     * `.at(-1)` returns the 64px thumbnail. That looked fine in the 40px pill
-     * and turned to mush the moment the card expanded the disc to 280px
-     * (560px on a retina screen). Sorting by width also survives Spotify
-     * changing the order or returning a shorter list.
-     */
-    const images: { url: string; width?: number }[] =
-      data.item.album?.images ?? []
-    const artwork = images.reduce<{ url: string; width?: number } | undefined>(
-      (widest, image) =>
-        (image.width ?? 0) > (widest?.width ?? 0) ? image : widest,
-      undefined
-    )
-
-    return {
-      isPlaying: Boolean(data.is_playing),
-      title: data.item.name,
-      artist: data.item.artists?.map((a: any) => a.name).join(', '),
-      album: data.item.album?.name,
-      albumArt: artwork?.url,
-      songUrl: data.item.external_urls?.spotify,
-      progressMs: data.progress_ms ?? 0,
-      durationMs: data.item.duration_ms ?? 0,
-    }
+    return (await getLatestTrack(token)) ?? silent
   } catch {
     // A failing music widget must never take down the page it sits on.
     return silent

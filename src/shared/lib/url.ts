@@ -5,7 +5,7 @@ export function absoluteUrl(path: string): string {
   return new URL(path, SITE.url).toString()
 }
 
-/** "https://kunaaal.com/x?y=1" -> "kunaaal.com/x" — for display, not linking. */
+/** "https://kunaaal.dev/x?y=1" -> "kunaaal.dev/x" — for display, not linking. */
 export function urlToName(url: string): string {
   return url.replace(/^https?:\/\//, '').replace(/\/$/, '')
 }

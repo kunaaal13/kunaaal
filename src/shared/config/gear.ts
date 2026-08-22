@@ -18,7 +18,7 @@ export const GEAR: GearGroup[] = [
       {
         name: 'MacBook Pro 14"',
         detail: 'M4 Pro · 12-core · 24 GB',
-        note: 'The notch on this thing is what BetterNotch exists for.',
+        note: 'The notch on this thing is what Better Notch exists for.',
       },
       {
         name: 'LG UltraFine 27UP850K',
@@ -46,12 +46,13 @@ export const GEAR: GearGroup[] = [
         name: 'Warp',
         href: 'https://warp.dev',
         detail: 'Terminal',
-        note: 'Where my agents live — every Claude Code session runs out of a Warp pane.',
+        note: 'Where my agents live — every Pi session runs out of a Warp pane.',
       },
       {
-        name: 'Claude Code',
-        href: 'https://claude.ai/code',
-        note: 'Does the parts of a task I already know how to do.',
+        name: 'Pi',
+        href: 'https://pi.dev',
+        detail: 'Coding agent harness',
+        note: 'Small enough to understand and open enough that the models, tools, UI and workflow are mine to replace.',
       },
     ],
   },

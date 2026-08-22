@@ -21,7 +21,6 @@ export interface Profile {
   website: string
   /** Booking link. Replaces a contact form — no endpoint, no inbox plumbing. */
   scheduling: string
-  avatar: string
   /**
    * Short prose, one or two paragraphs, separated by a blank line. Inline
    * links and bold are supported.
@@ -58,13 +57,8 @@ export const PROFILE: Profile = {
   // kunaaal.rao@gmail.com for git. This is the latter — swap if the other is
   // the one you want people writing to.
   emailB64: 'a3VuYWFhbC5yYW9AZ21haWwuY29t',
-  website: 'https://kunaaal.com', // TODO(kunal): confirm the domain
+  website: 'https://kunaaal.dev',
   scheduling: 'https://cal.com/kunaaal/30min',
-  // Head-and-shoulders crop of the illustrated portrait, square at 512px so a
-  // 2x 144px circle still has pixels to spare. Served from public/ rather than
-  // src/ assets because the header renders it as a plain <img> with an initials
-  // fallback, and astro:assets would take the src out of our hands.
-  avatar: '/avatar.jpg',
   availableForWork: true,
   about: `
 Software engineer at [UIX Labs](https://uixlabs.co), where I build [Morphic](https://morphic.com) — a GenAI studio for film — and co-founder of [Essel](https://essel.ai). I wrote the [Svelte adapter for TanStack Hotkeys](https://github.com/TanStack/hotkeys/pull/45), so if you use keyboard shortcuts in a Svelte app, that's mine.

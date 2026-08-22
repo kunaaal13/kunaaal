@@ -1,7 +1,9 @@
 ---
+import { Image } from 'astro:assets'
 import FlipSentences from '@/shared/ui/FlipSentences.astro'
 import VerifiedBadge from '@/shared/ui/VerifiedBadge.astro'
 import IsometricMark from './IsometricMark.astro'
+import avatar from './avatar.jpg'
 import { PROFILE } from '@/entities/profile'
 ---
 
@@ -20,11 +22,11 @@ import { PROFILE } from '@/entities/profile'
   */}
   {/* Asymmetric padding: generous above so the mark is not crowded by the
       header, tighter below because the mark deliberately breaks the rule. */}
-  <figure
+  <div
     class="relative col-span-2 px-2 pt-8 pb-2 sm:col-span-1 sm:col-start-2 sm:px-4 sm:pt-14 sm:pb-4"
   >
     <IsometricMark />
-  </figure>
+  </div>
 
   {/*
     Avatar: left column, spans both rows, bottom-aligned.
@@ -35,11 +37,11 @@ import { PROFILE } from '@/entities/profile'
   */}
   <div class="flex flex-col sm:row-span-2 sm:row-start-1">
     <div class="screen-line-top mt-auto shrink-0 border-r border-line">
-      <img
-        src={PROFILE.avatar}
+      <Image
+        src={avatar}
         alt={PROFILE.fullName}
-        width="176"
-        height="176"
+        width={288}
+        height={288}
         loading="eager"
         decoding="async"
         class="mx-0.5 my-[3px] size-28 rounded-full bg-muted object-cover select-none sm:size-36"

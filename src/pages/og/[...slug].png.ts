@@ -46,7 +46,13 @@ export const getStaticPaths: GetStaticPaths = async () => {
     })),
   ]
 
-  return cards.map(({ slug, card }) => ({ params: { slug }, props: { card } }))
+  return cards.map(({ slug, card }) => ({
+    params: { slug },
+    props: { card },
+    // Rasterisation dominates build time. Reuse PNGs until card data or the
+    // route's module graph changes.
+    cacheKey: JSON.stringify(card),
+  }))
 }
 
 export const GET: APIRoute = async ({ props }) => {

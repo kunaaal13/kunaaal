@@ -27,7 +27,7 @@ export function score(item: SearchItem, query: string): number {
   if (item.keywords?.some((k) => k.toLowerCase().includes(q))) return 40
   if (item.description?.toLowerCase().includes(q)) return 20
 
-  // Subsequence match, so "btnch" still finds "BetterNotch".
+  // Subsequence match, so "btnch" still finds "Better Notch".
   let i = 0
   for (const char of title) {
     if (char === q[i]) i++

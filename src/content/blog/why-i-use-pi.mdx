@@ -1,0 +1,193 @@
+---
+title: Why I use Pi
+description: I spent years tuning coding agents from outside the loop. Pi gave me the harness, context and workflow back.
+publishedAt: 2026-08-23T12:00:00Z
+tags: ['Pi', 'AI', 'Developer Tools']
+---
+
+My setup is never finished. I follow this space closely, so when a new skill
+pack, plugin or hook lands, it is usually in my config within the week. The
+tooling moves faster than the work does, and keeping up is part of the job now.
+
+Then I watched two talks by [Mario Zechner](https://x.com/badlogicgames) and
+realised none of what I had been tuning touched the part that actually mattered:
+
+- [Building pi in a World of Slop](https://www.youtube.com/watch?v=RjfbvDXpFls)
+- [I Hated Every Coding Agent, So I Built My Own](https://www.youtube.com/watch?v=Dli5slNaJu0)
+
+## What the talks gave me
+
+**Your context is not yours.** The vendor owns the window: system prompt, tool
+definitions, and reminders dropped into the middle of a conversation, one of
+which literally says the content may or may not be relevant. You are building
+workflows on top of something that changes without telling you.
+
+**A harness is a while loop.** Loop, tool calls, streaming, a context window.
+The rest is someone else's product decisions.
+
+**The model already knows it is a coding agent.** Pi's system prompt opens with
+two sentences:
+
+> You are an expert coding assistant operating inside pi, a coding agent
+> harness. You help users by reading files, executing commands, editing code,
+> and writing new files.
+
+After that it is the tool list, a few one-line guidelines, and the working
+directory. That is all of it.
+
+**Terminal-Bench is the awkward part.** Terminus can only send keystrokes to a
+tmux session and read the output. No file tools, no sub-agents, no search, and
+it still sits above harnesses built by the model's own lab.
+
+**Pruning tool results every turn kills your prompt cache.** You save some
+context and pay for it in latency and money on every call after.
+
+**An LSP check after every edit is worse than useless.** The model is three
+edits into a ten-edit change, so of course it does not compile. Type-check when
+it thinks it is done.
+
+**Approval popups are not security, they are fatigue.** Fatigue is people
+pressing Enter without reading.
+
+**A second tmux pane is more observable than a sub-agent.** You get every
+message instead of a summary.
+
+**`plan.md` beats plan mode.** It is still there tomorrow.
+
+And the one that is not about tools: agents repeat mistakes with no learning and
+no bottleneck, and the bill arrives later. A human is a bottleneck, and a human
+feels pain, and pain is what eventually triggers a refactor. A detailed enough
+spec is just a program, and every blank you leave gets filled with the median of
+every codebase on the internet.
+
+## The pile I had built
+
+This is what my Claude Code setup looked like the week I left. Most of it was
+only weeks old, because I rip things out and replace them the moment something
+better shows up.
+
+- **rtk, on a hook.** Every Bash command got rewritten to run through a proxy
+  that strips dev-tool noise before it reaches the model. `git status` stopped
+  costing me a paragraph.
+- **Caveman mode**
+  ([@julius_brussee](https://x.com/julius_brussee)). The same trimming from the
+  other end, on the model's replies. No "Certainly! I'd be happy to help", no
+  restating my question back at me. Roughly three quarters of output tokens are
+  politeness.
+- **Matt Pocock's skills**
+  ([@mattpocockuk](https://x.com/mattpocockuk)). A TDD loop, a bug-diagnosis
+  routine, a research agent that reads primary sources into the repo, and
+  grilling, which exists to poke holes in a plan until it falls over.
+- **PostHog's plugin.** Dozens of skills plus a live line to my project, so
+  "why did signups drop on Tuesday" was a terminal question instead of a tab I
+  would forget to open.
+- **Plannotator** ([@plannotator](https://x.com/plannotator)). Plans arrived as
+  something I could mark up in a browser instead of scroll past.
+- **A trust boundary, written out in plain English.** Which repo is real, which
+  hosts are internal, where secrets live, what counts as production.
+
+Look at that last one. I had written a policy document and handed it to my
+coding agent.
+
+And all of it sat outside the loop. Skills are files the model reads. Hooks are
+processes that fire around a tool call, a fresh one every time. Nothing there
+touched the system prompt, the context, the rendering, or the gap between the
+model returning a tool call and the tool running.
+
+Years of tuning, dozens of things tried and thrown away, and I had never once
+been inside the thing.
+
+## What Pi gives you back
+
+Four tools: read, write, edit, bash. No MCP, no sub-agents, no plan mode, no
+background bash, no todos. YOLO by default. Day one felt like moving into an
+empty flat. Then you find what is in the walls:
+
+- **Extensions are TypeScript files.** Register tools, slash commands, event
+  listeners, session state, custom compaction, a provider — or override any
+  built-in. Mario has a read/write/edit/bash set that runs over SSH; it took him
+  five minutes.
+- **Full TUI access.** A custom interface is on the table, not just a custom
+  colour.
+- **It hot reloads.** You write the extension inside the session that needs it.
+  "This annoys me" to "this is fixed" is one save.
+- **You do not have to write them.** Pi ships its docs and examples on disk and
+  points the model at them, so you describe what you want and it builds it.
+  Someone rebuilt Claude Code's mid-run steering that way in five minutes, with
+  more features and no fork.
+- **Distribution is npm and git.** No marketplace, no approval queue.
+  `pi install npm:whatever`, and publishing is one field in `package.json`.
+- **Your session is a tree, not a list.** Branch off, read forty files,
+  summarise, jump back to the root carrying only the summary. A sub-agent you
+  can read every message of.
+- **Nothing is injected behind your back.** Providers swap mid-session with the
+  context carried across, and cost tracking is built in and correct.
+
+And it scores. On Terminal-Bench in October, before Pi even had compaction, it
+landed right behind Terminus 2 on Opus 4.5.
+
+## What I rebuilt
+
+**A theme.** `claude-code` — unapologetically Claude Code's palette, because
+that is what my eyes are trained on. Pi keeps palette and semantic roles in
+separate blocks, so retheming is one file and no code.
+
+**Near-black diffs.** Tinted add/remove backgrounds on a black terminal look
+like a bruise.
+
+## What I actually run
+
+Eight packages. Six belong to other people.
+
+- [`pi-claude-code-ui`](https://www.npmjs.com/package/pi-claude-code-ui)
+  (FammasMaz) — the one I moved for. Compact rows for read, bash, grep, find, ls,
+  edit and write. Shiki diffs, split or unified, word-level emphasis, stat bars,
+  status dots, file icons, live tails on running commands. It even folds rtk's
+  rewrite notice into the bash row.
+- [`pi-web-access`](https://www.npmjs.com/package/pi-web-access) (Nico Bailon) —
+  search across roughly twenty providers with a fallback chain, reusing my
+  Codex auth instead of asking for another key. I keep it for video: point it at
+  a YouTube link and get transcripts, frames at timestamps, and answers about
+  what is on screen. It is how I pulled both talks above.
+- [`pi-caveman`](https://www.npmjs.com/package/pi-caveman) (jonjonrankin) — came
+  with me from Claude Code. Roughly 75% fewer output tokens, technical content
+  intact. Levels from lite to ultra.
+- [`@tintinweb/pi-tasks`](https://www.npmjs.com/package/@tintinweb/pi-tasks) —
+  Claude Code's todos, done honestly. Live widget with elapsed time and tokens
+  per task, real `blocks`/`blockedBy` dependencies with cycle warnings, and a
+  file-backed list several sessions can share.
+- [`@tintinweb/pi-subagents`](https://www.npmjs.com/package/@tintinweb/pi-subagents)
+  — background agents with a concurrency cap, steerable mid-run, resumable
+  after. FleetView lists main plus every running agent below the editor; press
+  down at an empty prompt and Enter to open one's live conversation. The
+  observability objection, answered.
+- [`@plannotator/pi-extension`](https://www.npmjs.com/package/@plannotator/pi-extension)
+  (backnotprop) — file-based plan mode with a browser UI. The plan is a file,
+  and I mark it up visually before approving.
+
+Two are mine, in `pi-extensions`:
+
+- **`pi-context-rename`.** I had twelve terminal tabs called `pi`. It titles the
+  session from the conversation and pushes that to the tab over OSC 0.
+  `/resume` shows sentences now, not timestamps.
+- **`pi-session-recap`.** I quit at 2am and come back to forty messages. On quit
+  it leaves a recap in the transcript and prints it after Pi exits. It is a
+  session entry, not a message — it survives a resume and never lands in the
+  model's context.
+
+## Where that leaves me
+
+A GPT model, in a harness by an Austrian game developer, painted like
+Anthropic's terminal, held together by extensions from five strangers and two
+of my own. None of those pieces know about each other. Choosing the model was
+the least interesting decision in the stack.
+
+I had spent years chasing whatever made the tool feel right that month, when
+what I actually wanted was for it to be mine. I had confused the two.
+
+Pi is not better. It is smaller, and it made me re-pick everything I was
+carrying. Most of it did not make the trip.
+
+Pi is by [Mario Zechner](https://x.com/badlogicgames) — [pi.dev](https://pi.dev).
+Watch both talks; everything in the first section is his, I have only compressed
+it.

@@ -2,6 +2,7 @@
 dist/
 .vercel/
 .netlify/
+.wrangler/
 
 # generated types
 .astro/
@@ -20,6 +21,7 @@ pnpm-debug.log*
 .env.production
 .env.local
 .env.*.local
+.dev.vars*
 
 # macOS
 .DS_Store

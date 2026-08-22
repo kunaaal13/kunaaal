@@ -1,4 +1,4 @@
-const url = import.meta.env.PUBLIC_SITE_URL ?? 'https://kunaaal.com'
+const url = import.meta.env.PUBLIC_SITE_URL ?? 'https://kunaaal.dev'
 
 export const SITE = {
   url,

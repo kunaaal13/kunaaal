@@ -18,7 +18,7 @@ import { spawn } from 'node:child_process'
 
 const PORT = Number(process.env.SPOTIFY_CALLBACK_PORT ?? 4321)
 const REDIRECT_URI = `http://127.0.0.1:${PORT}/callback`
-const SCOPE = 'user-read-currently-playing'
+const SCOPE = 'user-read-recently-played'
 
 /** Minimal .env reader — avoids a dependency for a script run once. */
 function loadEnv() {

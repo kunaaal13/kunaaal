@@ -15,10 +15,9 @@
   const CARD = { w: 304, h: 304, radius: 34, disc: 280, discX: 12, discY: -112 }
 
   /**
-   * Space reserved on the pill's right for the equaliser or the "last played"
-   * chip, whichever is showing. The title block ends here rather than carrying
-   * a fixed max-width — both are absolutely positioned, so a max-width does
-   * not actually reserve anything and a long title would run under the chip.
+   * Space reserved on the pill's right for the equaliser. The title block ends
+   * here rather than carrying a fixed max-width — both are absolutely
+   * positioned, so a long title would otherwise run under the bars.
    */
   const PILL_RIGHT_RESERVE = 86
 
@@ -87,8 +86,6 @@
       document.removeEventListener('keydown', onKey)
     }
   })
-
-  const hasTrack = $derived(Boolean(track?.title))
 
   // Only spins once expanded. At 40px in the pill the rotation reads as a
   // rendering glitch rather than a turntable — it needs the vinyl to make sense.
@@ -235,10 +232,6 @@
     >
       {#if track.isPlaying}
         {@render soundBars('sm')}
-      {:else if hasTrack}
-        <span class="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-          last played
-        </span>
       {/if}
     </div>
 
