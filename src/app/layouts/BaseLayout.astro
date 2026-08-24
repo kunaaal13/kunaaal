@@ -137,9 +137,10 @@ const ogImage = new URL(image, Astro.site ?? SITE.url)
 
         `server:defer` makes this a server island: the page around it stays
         static HTML served from the CDN, while this one fragment is rendered
-        per request — so the quote changes on every visit rather than once per
-        deploy. The fallback holds the exact height of the real thing, so
-        nothing shifts when it swaps in.
+        separately. Its response is cached for ten minutes, so the quote stays
+        stable briefly instead of changing on every page navigation. The
+        fallback holds the exact height of the real thing, so nothing shifts
+        when it swaps in.
       */}
       <div class="max-w-screen overflow-x-clip px-2">
         <div

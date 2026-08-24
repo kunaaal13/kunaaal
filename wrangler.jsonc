@@ -2,5 +2,12 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "kunaaal",
   "compatibility_date": "2026-04-01",
-  "compatibility_flags": ["nodejs_compat"]
+  "compatibility_flags": ["nodejs_compat"],
+  "routes": [
+    { "pattern": "kunaaal.dev", "custom_domain": true },
+    { "pattern": "www.kunaaal.dev", "custom_domain": true }
+  ],
+  "observability": {
+    "enabled": true
+  }
 }

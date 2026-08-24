@@ -1,11 +1,16 @@
 ---
 import { QUOTES } from '@/shared/config/quotes'
 
+// Cache deferred island response for ten minutes in browser and Cloudflare CDN.
+Astro.response.headers.set(
+  'Cache-Control',
+  'public, max-age=600, s-maxage=600, stale-while-revalidate=60',
+)
+
 /*
  * Rendered as a server island (`server:defer` where this is used), so this
- * runs per request rather than once at build. The rest of the page stays
- * static HTML on the CDN; only this fragment is dynamic, which is why the
- * quote can change on every visit without making the whole page server-rendered.
+ * runs per cache window rather than on every request. The rest of the page
+ * stays static HTML on the CDN; only this fragment is dynamic.
  */
 const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)]
 ---
