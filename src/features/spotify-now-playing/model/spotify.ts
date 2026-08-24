@@ -11,8 +11,8 @@ export interface NowPlaying {
 }
 
 const TOKEN_URL = 'https://accounts.spotify.com/api/token'
-const RECENTLY_PLAYED_URL =
-  'https://api.spotify.com/v1/me/player/recently-played?limit=1'
+const CURRENTLY_PLAYING_URL =
+  'https://api.spotify.com/v1/me/player/currently-playing'
 
 interface SpotifyEnv {
   clientId?: string
@@ -97,20 +97,21 @@ function toNowPlaying(
   }
 }
 
-async function getLatestTrack(token: string): Promise<NowPlaying | null> {
-  const response = await fetch(RECENTLY_PLAYED_URL, {
+async function getCurrentlyPlaying(token: string): Promise<NowPlaying | null> {
+  const response = await fetch(CURRENTLY_PLAYING_URL, {
     headers: { Authorization: `Bearer ${token}` },
   })
 
-  if (!response.ok) return null
+  // Spotify returns 204 when nothing is playing.
+  if (response.status === 204 || !response.ok) return null
 
   const data = (await response.json()) as {
-    items?: { track?: SpotifyTrack }[]
+    item?: SpotifyTrack
+    is_playing?: boolean
+    progress_ms?: number
   }
 
-  // Widget intentionally treats latest history item as active. This keeps the
-  // endpoint to one Spotify request and gives the card stable content.
-  return toNowPlaying(data.items?.[0]?.track, true)
+  return toNowPlaying(data.item, data.is_playing === true, data.progress_ms ?? 0)
 }
 
 export async function getNowPlaying(env: SpotifyEnv): Promise<NowPlaying> {
@@ -120,7 +121,7 @@ export async function getNowPlaying(env: SpotifyEnv): Promise<NowPlaying> {
     const token = await getAccessToken(env)
     if (!token) return silent
 
-    return (await getLatestTrack(token)) ?? silent
+    return (await getCurrentlyPlaying(token)) ?? silent
   } catch {
     // A failing music widget must never take down the page it sits on.
     return silent

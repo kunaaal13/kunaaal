@@ -6,7 +6,8 @@
  * Spins up a throwaway server on the redirect URI, opens the consent screen,
  * catches the authorization code and exchanges it. Prints the refresh token,
  * then exits. Nothing here ships — the site only ever uses the refresh token,
- * server-to-server, from /api/spotify.
+ * server-to-server, from /api/spotify. The token grants currently-playing
+ * access, not playback history.
  *
  * The dev server must be stopped first: both want port 4321, and the redirect
  * URI registered with Spotify has to match exactly.
@@ -18,7 +19,7 @@ import { spawn } from 'node:child_process'
 
 const PORT = Number(process.env.SPOTIFY_CALLBACK_PORT ?? 4321)
 const REDIRECT_URI = `http://127.0.0.1:${PORT}/callback`
-const SCOPE = 'user-read-recently-played'
+const SCOPE = 'user-read-currently-playing'
 
 /** Minimal .env reader — avoids a dependency for a script run once. */
 function loadEnv() {
