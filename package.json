@@ -7,7 +7,7 @@
     "dev": "astro dev",
     "build": "astro check && astro build",
     "preview": "astro preview",
-    "deploy": "bun run build && wrangler deploy",
+    "deploy": "bun run build && CLOUDFLARE_ACCOUNT_ID=361b14d6f7c6e8cebf505713f5b96f69 wrangler deploy",
     "check": "astro check",
     "sync": "astro sync",
     "spotify:token": "node scripts/spotify-token.mjs",

@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "kunaaal",
+  "account_id": "361b14d6f7c6e8cebf505713f5b96f69",
   "compatibility_date": "2026-04-01",
   "compatibility_flags": ["nodejs_compat"],
   "routes": [
