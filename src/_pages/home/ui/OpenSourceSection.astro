@@ -1,0 +1,116 @@
+---
+import Panel from '@/shared/ui/Panel.astro'
+import PanelHeader from '@/shared/ui/PanelHeader.astro'
+import PanelTitle from '@/shared/ui/PanelTitle.astro'
+
+const contributions = [
+  {
+    project: 'TanStack Hotkeys',
+    url: 'https://github.com/TanStack/hotkeys',
+    pullRequests: [
+      {
+        number: 45,
+        title: 'Svelte adapter',
+        detail: 'Built the Svelte 5 adapter, tests, and docs for type-safe shortcuts.',
+        url: 'https://github.com/TanStack/hotkeys/pull/45',
+      },
+    ],
+  },
+  {
+    project: 'Synara',
+    url: 'https://github.com/Emanuele-web04/synara',
+    pullRequests: [
+      {
+        number: 1246,
+        title: 'Codex banked resets',
+        detail: 'Added credit display and confirm-gated redemption with retry-safe requests.',
+        url: 'https://github.com/Emanuele-web04/synara/pull/1246',
+      },
+      {
+        number: 1093,
+        title: 'Pi extension status',
+        detail: 'Kept status updates out of the tool timeline while preserving notifications.',
+        url: 'https://github.com/Emanuele-web04/synara/pull/1093',
+      },
+    ],
+  },
+  {
+    project: 'Pi Subagents',
+    url: 'https://github.com/tintinweb/pi-subagents',
+    pullRequests: [
+      {
+        number: 234,
+        title: 'Selected FleetView row',
+        detail: 'Made selected agent details readable in the theme’s primary text color.',
+        url: 'https://github.com/tintinweb/pi-subagents/pull/234',
+      },
+    ],
+  },
+]
+---
+
+<Panel id="open-source">
+  <PanelHeader>
+    <PanelTitle id="open-source">Open source</PanelTitle>
+  </PanelHeader>
+
+  <div class="relative [--col-left:--spacing(48)]">
+    <div
+      aria-hidden="true"
+      class="dashed-rule-y pointer-events-none absolute inset-y-0 left-(--col-left) -z-1 w-px max-sm:hidden"
+    ></div>
+
+    <ol>
+      {contributions.map((contribution, index) => (
+        <li class="grid items-start gap-y-3 border-b border-line py-4 sm:grid-cols-[var(--col-left)_1fr]">
+          <h3 class="pl-4 text-sm/6 font-normal text-muted-foreground">
+            <span class="mr-1.5 font-mono text-muted-foreground/50 select-none" aria-hidden="true">
+              {String(index + 1).padStart(2, '0')}
+            </span>
+            <a class="link" href={contribution.url} target="_blank" rel="noopener">
+              {contribution.project}
+            </a>
+          </h3>
+
+          <ul class="space-y-4 px-4">
+            {contribution.pullRequests.map((pr) => (
+              <li>
+                <h4 class="font-medium text-balance">
+                  <a class="link" href={pr.url} target="_blank" rel="noopener">
+                    {pr.title}
+                    <span class="ml-1 font-mono text-xs font-normal text-muted-foreground">
+                      #{pr.number}
+                    </span>
+                  </a>
+                </h4>
+                <p class="mt-1 text-sm/[1.7] text-muted-foreground">{pr.detail}</p>
+              </li>
+            ))}
+          </ul>
+        </li>
+      ))}
+    </ol>
+  </div>
+
+  <div class="flex justify-center py-4">
+    <a
+      class="inline-flex h-8 items-center gap-2 rounded-md bg-muted px-3 text-sm font-medium transition-colors hover:bg-accent"
+      href="https://github.com/pulls?q=is%3Apr+is%3Amerged+author%3Akunaaal13"
+      target="_blank"
+      rel="noopener"
+    >
+      All contributions
+      <svg
+        class="size-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        aria-hidden="true"
+      >
+        <path d="M7 17 17 7M7 7h10v10" />
+      </svg>
+    </a>
+  </div>
+</Panel>
