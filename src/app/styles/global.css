@@ -58,6 +58,8 @@
   /* --- Rotating text ------------------------------------------------------
    * One keyframe set per line count. Each line shares the animation and is
    * offset by `animation-delay`, so exactly one is visible at a time.
+   * `--flip-shift` scales the travel; reduced motion sets it to 0, leaving a
+   * plain crossfade.
    *
    * The percentages have to be literals — keyframe selectors cannot use
    * calc() — and the visible slice is 100/N, so N needs its own block. Two
@@ -71,45 +73,59 @@
   --animate-flip-5: flip-5 var(--flip-duration, 15s) ease infinite;
 
   @keyframes flip-2 {
-    0% { opacity: 0; transform: translateY(0.4em); }
+    0% { opacity: 0; transform: translateY(calc(0.4em * var(--flip-shift, 1))); }
     3% { opacity: 1; transform: translateY(0); }
     47% { opacity: 1; transform: translateY(0); }
-    50% { opacity: 0; transform: translateY(-0.4em); }
-    100% { opacity: 0; transform: translateY(-0.4em); }
+    50% { opacity: 0; transform: translateY(calc(-0.4em * var(--flip-shift, 1))); }
+    100% { opacity: 0; transform: translateY(calc(-0.4em * var(--flip-shift, 1))); }
   }
 
   @keyframes flip-3 {
-    0% { opacity: 0; transform: translateY(0.4em); }
+    0% { opacity: 0; transform: translateY(calc(0.4em * var(--flip-shift, 1))); }
     2.5% { opacity: 1; transform: translateY(0); }
     30.8% { opacity: 1; transform: translateY(0); }
-    33.3% { opacity: 0; transform: translateY(-0.4em); }
-    100% { opacity: 0; transform: translateY(-0.4em); }
+    33.3% { opacity: 0; transform: translateY(calc(-0.4em * var(--flip-shift, 1))); }
+    100% { opacity: 0; transform: translateY(calc(-0.4em * var(--flip-shift, 1))); }
   }
 
   @keyframes flip-4 {
-    0% { opacity: 0; transform: translateY(0.4em); }
+    0% { opacity: 0; transform: translateY(calc(0.4em * var(--flip-shift, 1))); }
     2% { opacity: 1; transform: translateY(0); }
     23% { opacity: 1; transform: translateY(0); }
-    25% { opacity: 0; transform: translateY(-0.4em); }
-    100% { opacity: 0; transform: translateY(-0.4em); }
+    25% { opacity: 0; transform: translateY(calc(-0.4em * var(--flip-shift, 1))); }
+    100% { opacity: 0; transform: translateY(calc(-0.4em * var(--flip-shift, 1))); }
   }
 
   @keyframes flip-5 {
-    0% { opacity: 0; transform: translateY(0.4em); }
+    0% { opacity: 0; transform: translateY(calc(0.4em * var(--flip-shift, 1))); }
     1.5% { opacity: 1; transform: translateY(0); }
     18.5% { opacity: 1; transform: translateY(0); }
-    20% { opacity: 0; transform: translateY(-0.4em); }
-    100% { opacity: 0; transform: translateY(-0.4em); }
+    20% { opacity: 0; transform: translateY(calc(-0.4em * var(--flip-shift, 1))); }
+    100% { opacity: 0; transform: translateY(calc(-0.4em * var(--flip-shift, 1))); }
   }
 
   /* Now-playing equaliser bar. Three of these at staggered delays read as
-   * audio without a canvas or a single byte of animation JS. */
+   * audio without a canvas or a single byte of animation JS. Scaled rather
+   * than resized, so each frame is a composite instead of a layout. */
   --animate-eq: eq 900ms ease-in-out infinite;
 
   @keyframes eq {
-    0%, 100% { height: 30%; }
-    50% { height: 100%; }
+    0%, 100% { transform: scaleY(0.3); }
+    50% { transform: scaleY(1); }
   }
+}
+
+/* --- Motion tokens ---------------------------------------------------------
+ * The built-in curves are too soft to read as responsive. `static` keeps the
+ * variables on :root even where no utility uses them, since hand-written CSS
+ * below refers to them by name. The default timing function means every
+ * `transition-*` utility picks up the strong ease-out without opting in.
+ * -------------------------------------------------------------------------*/
+
+@theme static {
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --default-transition-timing-function: var(--ease-out-strong);
 }
 
 :root {
@@ -255,6 +271,55 @@
   @apply underline decoration-current/30 decoration-1 underline-offset-3 transition-colors hover:decoration-current;
 }
 
+/* --- Interaction ---------------------------------------------------------- */
+
+/* Press feedback for buttons and button-like links. Replaces
+ * `transition-colors` rather than stacking with it — both set
+ * transition-property, and the later one would win. `scale` shrinks the label
+ * and icon with the surface, which is what makes it read as a physical press.
+ * No hover gating needed: `:active` is a real press on touch. */
+@utility pressable {
+  transition-property:
+    color, background-color, border-color, text-decoration-color, fill,
+    stroke, opacity, scale;
+  transition-duration: 160ms;
+  transition-timing-function: var(--ease-out-strong);
+
+  &:active {
+    scale: 0.97;
+  }
+}
+
+/* Animated <details>. `interpolate-size` lets the content box tween to
+ * `auto`; browsers without `::details-content` simply open instantly. Height
+ * is the one layout property allowed to animate here — there is no transform
+ * equivalent for revealing content — so it stays short. */
+@utility disclosure {
+  interpolate-size: allow-keywords;
+
+  &::details-content {
+    block-size: 0;
+    opacity: 0;
+    overflow: clip;
+    transition:
+      block-size 200ms var(--ease-out-strong),
+      opacity 200ms var(--ease-out-strong),
+      content-visibility 200ms allow-discrete;
+  }
+
+  &[open]::details-content {
+    block-size: auto;
+    opacity: 1;
+  }
+
+  /* Keep the fade, drop the growth. */
+  @media (prefers-reduced-motion: reduce) {
+    &::details-content {
+      transition-property: opacity, content-visibility;
+    }
+  }
+}
+
 /* --- Base ----------------------------------------------------------------- */
 
 @layer base {
@@ -311,11 +376,12 @@
  * meaningful share of visitors with no transition at all.
  * -------------------------------------------------------------------------*/
 
-/* Morph targets. `transition:name` on a project card image and its detail-page
- * hero share a name, so the browser tweens between them across navigation. */
-@utility morph-target {
-  view-transition-name: var(--morph-name);
-  contain: layout;
+/* The root crossfade runs on every in-site click, so it stays short and
+ * front-loaded rather than the browser's default 250ms ease. */
+html::view-transition-old(root),
+html::view-transition-new(root) {
+  animation-duration: 180ms;
+  animation-timing-function: var(--ease-out-strong);
 }
 
 @media (prefers-reduced-motion: reduce) {

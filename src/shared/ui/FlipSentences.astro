@@ -46,13 +46,13 @@ const animation = ANIMATION[count]
   {
     animation ? (
       <div
-        class="relative h-[1.5em] overflow-hidden"
+        class="relative h-[1.5em] overflow-hidden motion-reduce:[--flip-shift:0]"
         style={`--flip-duration: ${count * interval}s`}
       >
         {sentences.map((sentence, index) => (
           <span
             class={cn(
-              'absolute inset-x-0 top-0 leading-[1.5] truncate opacity-0 motion-reduce:animate-none',
+              'absolute inset-x-0 top-0 leading-[1.5] truncate opacity-0',
               animation
             )}
             style={`animation-delay: ${index * interval}s`}
@@ -61,8 +61,8 @@ const animation = ANIMATION[count]
             {sentence}
           </span>
         ))}
-        {/* Stable copy for assistive tech, and the reduced-motion fallback. */}
-        <span class="absolute inset-x-0 top-0 truncate leading-[1.5] opacity-0 motion-reduce:opacity-100">
+        {/* Stable copy for assistive tech. */}
+        <span class="absolute inset-x-0 top-0 truncate leading-[1.5] opacity-0">
           {sentences[0]}
         </span>
       </div>

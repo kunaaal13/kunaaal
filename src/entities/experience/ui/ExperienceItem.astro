@@ -48,11 +48,14 @@ const { company, companyUrl, location, locationType, positions, isCurrent } =
             {isCurrent && (
               <dd>
                 <span class="sr-only">Current</span>
+                {/*
+                  Static on purpose. The availability dot in the overview
+                  already pings; two pulses on one page compete for the eye.
+                */}
                 <span
                   class="relative flex size-2.5 items-center justify-center"
                   aria-hidden="true"
                 >
-                  <span class="absolute inline-flex size-2.5 animate-ping rounded-full bg-info opacity-50" />
                   <span class="relative inline-flex size-1.5 rounded-full bg-info" />
                 </span>
               </dd>

@@ -47,6 +47,13 @@
   const pillFade = $derived(clamp01(1 - p * 2.2))
   const cardFade = $derived(clamp01((p - 0.45) * 2.2))
 
+  // The disc is laid out once at card size and moved with a transform, so the
+  // spring composites instead of re-running layout on every frame.
+  const discScale = $derived(lerp(PILL.disc, CARD.disc) / CARD.disc)
+  // The spindle's on-screen size is 48·p px. It sits inside the scaled disc,
+  // so divide the disc's scale back out.
+  const spindleScale = $derived(discScale > 0 ? p / discScale : 0)
+
   async function load() {
     try {
       const response = await fetch('/api/spotify')
@@ -98,9 +105,9 @@
   <span class="flex items-end gap-[3px] {size === 'lg' ? 'h-3.5' : 'h-3'}">
     {#each [0, 1, 2, 3] as i}
       <span
-        class="w-[3px] rounded-full bg-[#1DB954] {track?.isPlaying
+        class="h-full w-[3px] origin-bottom rounded-full bg-[#1DB954] {track?.isPlaying
           ? 'animate-eq'
-          : 'h-1/3'} motion-reduce:animate-none motion-reduce:h-1/3"
+          : 'scale-y-[0.33]'} motion-reduce:animate-none motion-reduce:scale-y-[0.33]"
         style="animation-delay: {i * 120}ms"
       ></span>
     {/each}
@@ -163,7 +170,7 @@
         expanded = !expanded
       }
     }}
-    class="relative z-40 cursor-pointer overflow-hidden border border-border bg-surface text-foreground shadow-lg ring-1 ring-black/5 select-none dark:ring-white/10"
+    class="relative z-40 cursor-pointer overflow-hidden border border-border bg-surface text-foreground shadow-lg ring-1 ring-black/5 select-none transition-[scale] duration-160 active:scale-[0.98] dark:ring-white/10"
     style="
       width: {lerp(PILL.w, CARD.w)}px;
       height: {lerp(PILL.h, CARD.h)}px;
@@ -174,21 +181,21 @@
          rises continuously instead of crossfading between two copies.
          The card clips its top edge — that crop is the design. -->
     <div
-      class="absolute"
+      class="absolute top-0 left-0 origin-top-left"
       style="
-        left: {lerp(PILL.discX, CARD.discX)}px;
-        top: {lerp(PILL.discY, CARD.discY)}px;
-        width: {lerp(PILL.disc, CARD.disc)}px;
-        height: {lerp(PILL.disc, CARD.disc)}px;
+        width: {CARD.disc}px;
+        height: {CARD.disc}px;
+        transform: translate({lerp(PILL.discX, CARD.discX)}px, {lerp(PILL.discY, CARD.discY)}px) scale({discScale});
       "
     >
       {#if track.albumArt}
+        <!-- Always animating, only paused when idle. Removing the animation
+             instead would snap the record back to 0° every time it stops. -->
         <img
           src={track.albumArt}
           alt=""
-          class="size-full rounded-full object-cover {spinning
-            ? 'animate-[spin_15s_linear_infinite]'
-            : ''}"
+          class="size-full animate-[spin_15s_linear_infinite] rounded-full object-cover"
+          style="animation-play-state: {spinning ? 'running' : 'paused'}"
         />
       {:else}
         <span class="flex size-full items-center justify-center rounded-full bg-muted">
@@ -199,11 +206,10 @@
       <!-- Metallic spindle, only meaningful at vinyl scale. -->
       <div
         class="pointer-events-none absolute inset-0 m-auto flex items-center justify-center rounded-full border-[3px] border-[#A0A4B8] bg-gradient-to-b from-[#D2D5E5] via-[#9DA1B6] to-[#717588] shadow-md dark:border-neutral-600 dark:from-neutral-700 dark:to-neutral-900"
-        style="width: {48 * p}px; height: {48 * p}px; opacity: {cardFade}"
+        style="width: 48px; height: 48px; transform: scale({spindleScale}); opacity: {cardFade}"
       >
         <div
-          class="rounded-full border border-neutral-400 bg-surface shadow-inner dark:border-neutral-700"
-          style="width: {18 * p}px; height: {18 * p}px"
+          class="size-[18px] rounded-full border border-neutral-400 bg-surface shadow-inner dark:border-neutral-700"
         ></div>
       </div>
     </div>

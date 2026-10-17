@@ -96,7 +96,7 @@
   type="button"
   onclick={show}
   class="flex h-8 items-center gap-1.5 rounded-md px-1.5
-         text-muted-foreground transition-colors hover:bg-accent hover:text-foreground
+         text-muted-foreground pressable hover:bg-accent hover:text-foreground
          focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none max-sm:hidden"
   aria-label="Search"
 >

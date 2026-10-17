@@ -23,10 +23,33 @@ function paint(resolved: 'light' | 'dark') {
   document.documentElement.classList.toggle('dark', resolved === 'dark')
 }
 
+/**
+ * Runs `fn` with every CSS transition switched off, except inside the toggle.
+ *
+ * Without this, elements carrying `transition-colors` fade to the new palette
+ * while everything else snaps, so a theme change ripples across the page
+ * instead of landing at once. The toggle is exempt so its icon swap still
+ * animates.
+ */
+function withoutTransitions(fn: () => void) {
+  const style = document.createElement('style')
+  style.textContent =
+    ':not([data-theme-toggle], [data-theme-toggle] *),' +
+    ':not([data-theme-toggle] *)::before,' +
+    ':not([data-theme-toggle] *)::after' +
+    '{transition:none!important}'
+  document.head.appendChild(style)
+  fn()
+  // Force a style flush so the new colours resolve while transitions are
+  // still off; removing the sheet in the same frame would let them run.
+  void window.getComputedStyle(document.body).opacity
+  setTimeout(() => style.remove(), 1)
+}
+
 export function setTheme(theme: Theme) {
   if (theme === 'system') localStorage.removeItem(STORAGE_KEY)
   else localStorage.setItem(STORAGE_KEY, theme)
-  paint(resolveTheme(theme))
+  withoutTransitions(() => paint(resolveTheme(theme)))
 }
 
 /**

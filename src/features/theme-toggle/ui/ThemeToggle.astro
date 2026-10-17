@@ -15,8 +15,8 @@
 <button
   type="button"
   data-theme-toggle
-  class="flex size-8 items-center justify-center rounded-md text-muted-foreground
-         transition-colors hover:bg-accent hover:text-foreground
+  class="grid size-8 place-items-center rounded-md text-muted-foreground
+         pressable hover:bg-accent hover:text-foreground
          focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
   aria-label="Toggle theme"
 >
@@ -24,9 +24,15 @@
     Both glyphs are rendered and CSS picks one off the `dark` class. Choosing
     in CSS rather than JS means the right icon is correct on first paint,
     with no flicker while scripts load.
+
+    They share one grid cell and crossfade, with a small scale and blur so
+    the swap reads as one icon turning into the other rather than two
+    overlapping. Reduced motion keeps only the fade.
   */}
   <svg
-    class="size-4 dark:hidden"
+    class="size-4 [grid-area:1/1] transition-[opacity,scale,filter] duration-200
+           motion-reduce:transition-opacity
+           dark:scale-90 dark:opacity-0 dark:blur-[2px]"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -40,7 +46,10 @@
     ></path>
   </svg>
   <svg
-    class="hidden size-4 dark:block"
+    class="size-4 scale-90 opacity-0 blur-[2px] [grid-area:1/1]
+           transition-[opacity,scale,filter] duration-200
+           motion-reduce:transition-opacity
+           dark:scale-100 dark:opacity-100 dark:blur-none"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"

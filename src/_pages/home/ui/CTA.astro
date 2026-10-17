@@ -41,44 +41,60 @@ import { PROFILE } from '@/entities/profile'
       a raw address where a decision should be — /contact already lists every
       channel for anyone who would rather write.
     */}
-    <a
-      href={PROFILE.scheduling}
-      target="_blank"
-      rel="noopener"
-      class="group relative inline-flex h-13 items-center gap-3 overflow-hidden rounded-full
-             bg-foreground pr-3 pl-6 font-medium text-background
-             shadow-lg shadow-foreground/10 transition-all
-             hover:shadow-xl hover:shadow-foreground/20
-             focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
-             focus-visible:ring-offset-background focus-visible:outline-none"
-    >
-      {/* Sheen that sweeps across on hover. */}
+    {/*
+      The wrapper carries the press and the hover shadow. The deeper shadow is
+      its own layer that fades in, rather than an animated box-shadow, which
+      would repaint the button every frame. It cannot live inside the link:
+      the link's overflow-hidden (needed for the sheen) would clip it.
+    */}
+    <div class="group/cta pressable relative flex">
       <span
-        class="pointer-events-none absolute inset-0 -translate-x-full bg-linear-to-r
-               from-transparent via-background/25 to-transparent
-               transition-transform duration-700 group-hover:translate-x-full"
+        class="pointer-events-none absolute inset-0 rounded-full shadow-xl shadow-foreground/20
+               opacity-0 transition-opacity duration-200 group-hover/cta:opacity-100"
         aria-hidden="true"></span>
-
-      <span class="relative">Book a call</span>
-
-      <span
-        class="relative flex size-9 items-center justify-center rounded-full
-               bg-background/15 transition-transform group-hover:translate-x-0.5"
+      <a
+        href={PROFILE.scheduling}
+        target="_blank"
+        rel="noopener"
+        class="group relative inline-flex h-13 items-center gap-3 overflow-hidden rounded-full
+               bg-foreground pr-3 pl-6 font-medium text-background
+               shadow-lg shadow-foreground/10
+               focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+               focus-visible:ring-offset-background focus-visible:outline-none"
       >
-        <svg
-          class="size-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
+        {/*
+          Sheen that sweeps across on hover. Asymmetric on purpose: the sweep
+          only has a transition while hovered, so leaving snaps it back out of
+          sight instead of playing it in reverse.
+        */}
+        <span
+          class="pointer-events-none absolute inset-0 -translate-x-full bg-linear-to-r
+                 from-transparent via-background/25 to-transparent
+                 group-hover:translate-x-full group-hover:transition-transform
+                 group-hover:duration-700 group-hover:ease-in-out-strong motion-reduce:hidden"
+          aria-hidden="true"></span>
+
+        <span class="relative">Book a call</span>
+
+        <span
+          class="relative flex size-9 items-center justify-center rounded-full
+                 bg-background/15 transition-transform group-hover:translate-x-0.5"
         >
-          <path d="M5 12h14M13 6l6 6-6 6"></path>
-        </svg>
-      </span>
-    </a>
+          <svg
+            class="size-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M5 12h14M13 6l6 6-6 6"></path>
+          </svg>
+        </span>
+      </a>
+    </div>
 
     <p class="font-mono text-xs text-muted-foreground">
       30 minutes · pick a slot that suits you

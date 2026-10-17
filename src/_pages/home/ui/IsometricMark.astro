@@ -215,7 +215,7 @@ const viewBox = `${box.x} ${box.y} ${box.w} ${box.h}`
   // pointer so the highlight trails instead of snapping, and the rAF loop
   // stops once settled.
   const canAnimate =
-    window.matchMedia('(hover: hover)').matches &&
+    window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
     !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   if (canAnimate) {
@@ -227,20 +227,28 @@ const viewBox = `${box.x} ${box.y} ${box.w} ${box.h}`
     let x = 0
     let y = 0
     let frame = 0
+    let last = 0
 
     const paint = () => {
       gradient?.setAttribute('cx', String(x))
       gradient?.setAttribute('cy', String(y))
     }
 
-    const tick = () => {
-      x += (targetX - x) * 0.12
-      y += (targetY - y) * 0.12
+    const tick = (now: number) => {
+      // 12% of the remaining distance per 60Hz frame, scaled by the time that
+      // actually elapsed. A fixed per-frame step would trail twice as fast on
+      // a 120Hz screen.
+      const step = last ? 1 - Math.pow(0.88, (now - last) / (1000 / 60)) : 0.12
+      last = now
+      x += (targetX - x) * step
+      y += (targetY - y) * step
       paint()
-      frame =
+      const moving =
         Math.abs(targetX - x) > 0.5 || Math.abs(targetY - y) > 0.5
-          ? requestAnimationFrame(tick)
-          : 0
+      frame = moving ? requestAnimationFrame(tick) : 0
+      // Forget the timestamp once settled, so the next run does not count the
+      // idle gap as one enormous frame.
+      if (!moving) last = 0
     }
 
     /** Ease back to the centre, so the mark reads as unlit when idle. */
