@@ -290,35 +290,6 @@
   }
 }
 
-/* Animated <details>. `interpolate-size` lets the content box tween to
- * `auto`; browsers without `::details-content` simply open instantly. Height
- * is the one layout property allowed to animate here — there is no transform
- * equivalent for revealing content — so it stays short. */
-@utility disclosure {
-  interpolate-size: allow-keywords;
-
-  &::details-content {
-    block-size: 0;
-    opacity: 0;
-    overflow: clip;
-    transition:
-      block-size 200ms var(--ease-out-strong),
-      opacity 200ms var(--ease-out-strong),
-      content-visibility 200ms allow-discrete;
-  }
-
-  &[open]::details-content {
-    block-size: auto;
-    opacity: 1;
-  }
-
-  /* Keep the fade, drop the growth. */
-  @media (prefers-reduced-motion: reduce) {
-    &::details-content {
-      transition-property: opacity, content-visibility;
-    }
-  }
-}
 
 /* --- Base ----------------------------------------------------------------- */
 
