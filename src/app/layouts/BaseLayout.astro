@@ -2,7 +2,6 @@
 import { ClientRouter } from 'astro:transitions'
 import '@/app/styles/global.css'
 import SiteHeader from '@/app/ui/SiteHeader.astro'
-import SiteQuote from '@/app/ui/SiteQuote.astro'
 import SiteFooter from '@/app/ui/SiteFooter.astro'
 import JsonLd from '@/shared/ui/JsonLd.astro'
 import { SITE } from '@/shared/config/site'
@@ -131,26 +130,6 @@ const ogImage = new URL(image, Astro.site ?? SITE.url)
       <main class="max-w-screen overflow-x-clip px-2">
         <slot />
       </main>
-
-      {/*
-        Sits between the content and the footer on every page.
-
-        `server:defer` makes this a server island: the page around it stays
-        static HTML served from the CDN, while this one fragment is rendered
-        separately. Its response is cached for ten minutes, so the quote stays
-        stable briefly instead of changing on every page navigation. The
-        fallback holds the exact height of the real thing, so nothing shifts
-        when it swaps in.
-      */}
-      <div class="max-w-screen overflow-x-clip px-2">
-        <div
-          class="screen-line-top screen-line-bottom mx-auto border-x border-line md:max-w-3xl"
-        >
-          <SiteQuote server:defer>
-            <div slot="fallback" class="h-[19.5rem]" aria-hidden="true"></div>
-          </SiteQuote>
-        </div>
-      </div>
 
       <SiteFooter />
     </div>
