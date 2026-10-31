@@ -60,7 +60,7 @@ export default defineConfig({
     // Sätteri is the default processor in Astro 7 — no remark/rehype install.
     // Shiki runs at build time, so highlighted code ships as plain HTML.
     shikiConfig: {
-      themes: { light: 'github-light', dark: 'github-dark' },
+      themes: { light: 'github-light-default', dark: 'vesper' },
       wrap: false,
     },
   },

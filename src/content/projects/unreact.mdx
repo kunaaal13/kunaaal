@@ -1,0 +1,332 @@
+---
+title: Unreact
+description: Starting with UI = f(state), building a renderer, then following the questions that lead to reconciliation, hooks, effects, and context.
+status: building
+featured: true
+order: 5
+period:
+  start: '10.2026'
+tech: ['TypeScript', 'DOM', 'Bun']
+links:
+  github: 'https://github.com/kunaaal13/unreact'
+---
+
+I started with this:
+
+```text
+UI = f(state)
+```
+
+I'd seen that idea used to explain React. But there's a gap between understanding
+the sentence and knowing how to build something from it. If a function returns
+UI, what does it return? Who puts it on screen? What happens when I call it again?
+
+Unreact is my attempt to work through those questions in code. No React
+dependency, no JSX to start with — just TypeScript and the browser DOM.
+
+Here's how the pieces build on each other.
+
+## First, what should a UI function return?
+
+A function could return an actual DOM element. But then describing the UI and
+creating it would be the same operation. I wanted a description I could inspect
+before doing anything to the browser.
+
+An object was enough:
+
+```ts
+{
+  element: 'button',
+  props: { id: 'counter' },
+  children: ['Count: 0'],
+}
+```
+
+A tag, some props, some children. Children can be text or more objects with the
+same shape, so this also gives me a tree.
+
+`createElement` is a small convenience around that representation. It doesn't
+render anything:
+
+```ts
+function createElement(element, props, ...children) {
+  return { element, props, children }
+}
+```
+
+Now a function can describe a counter without knowing how to mount it:
+
+```ts
+function Counter(count: number) {
+  return createElement('button', {}, `Count: ${count}`)
+}
+```
+
+That's the first useful version of the equation: state goes in, a plain object
+comes out. The snippets here leave out some types and branches to keep the
+mechanism visible; the repository has the full implementation.
+
+## Okay, how does that become something on screen?
+
+Once I had a tree of descriptions, the next job was translating it into DOM
+nodes. Text becomes a text node. An element becomes a DOM element, with the same
+operation repeated for its children.
+
+```ts
+function createDom(node) {
+  if (typeof node === 'string' || typeof node === 'number') {
+    return document.createTextNode(String(node))
+  }
+
+  const element = document.createElement(node.element)
+  updateProps(element, node.props, {})
+
+  for (const child of node.children) {
+    element.appendChild(createDom(child))
+  }
+
+  return element
+}
+```
+
+Mounting is then just appending the result:
+
+```ts
+const root = document.getElementById('root')!
+render(Counter(0), root)
+```
+
+At this point I can describe UI and see it. But only once. Calling `render`
+again appends another button — it doesn't update the first one.
+
+## What happens when the state changes?
+
+The function part is easy: call `Counter(1)` and I get the next description.
+The harder part is deciding what to do with the DOM that's already there.
+
+I could throw it away and rebuild everything. But changing a button's label
+doesn't require a new button. So now I need both descriptions: what was rendered
+before, and what I want to render next.
+
+```ts
+const before = Counter(0)
+const after = Counter(1)
+
+render(before, root)
+updateElement(root, after, before)
+```
+
+That led to a small set of decisions:
+
+- No previous node? Insert the new one.
+- No next node? Remove the old one.
+- Different text or different element tags? Replace the node.
+- Same tag? Keep the DOM element, update its props, and compare its children.
+
+The matching-element branch boils down to this:
+
+```ts
+updateProps(element, newNode.props, oldNode.props)
+
+// After removing any extra trailing children:
+for (let i = 0; i < newNode.children.length; i++) {
+  updateElement(
+    element,
+    newNode.children[i] ?? null,
+    oldNode.children[i] ?? null,
+    i,
+  )
+}
+```
+
+This is where “update the props” stopped being one simple operation. Replacing
+an event handler means removing the previous listener. Removing a style means
+clearing it, not leaving the old declaration behind. An input's live `value`
+isn't just its HTML attribute.
+
+> My diff matches children by position. It doesn't understand keyed identity:
+> inserting an item at the front means comparing it with whatever previously
+> occupied that position. That's a boundary of this implementation, not a solved
+> version of React reconciliation.
+
+## Who remembers the previous render?
+
+Passing `before` and `after` manually works, but I don't want every counter to
+manage that bookkeeping. And a local variable inside `Counter` would be created
+again every time the function runs.
+
+The missing piece is a persistent component instance, separate from the function
+that describes its UI.
+
+I keep one record per container in a `WeakMap`. It stores the previous tree,
+hook values, and a way to render again. The core loop becomes:
+
+```ts
+const nextNode = component()
+updateElement(container, nextNode, context.node)
+context.node = nextNode
+```
+
+Now `renderComponent(Counter, root)` can own the render history. The function
+only needs to describe its next UI.
+
+But there's still a question: how does that function get persistent state?
+
+## State has to live outside the function call
+
+A hook can read from the component's persistent record. The smallest storage
+model is an array, with each `useState` call taking the next slot.
+
+```ts
+const [count, setCount] = useState(0)      // Slot 0
+const [name, setName] = useState('Loki')  // Slot 1
+```
+
+Before running a component, I select its record and reset a hook index to zero.
+Each call advances the index without clearing the saved values:
+
+```ts
+const component = currentComponent
+const index = hookIndex++
+
+if (!(index in component.hooks)) {
+  component.hooks[index] = initialValue
+}
+```
+
+That makes the hook-order rule much less mysterious. There's no lookup by the
+name `count`. There is only “the first call reads the first slot.” Conditional
+calls would change which state a later call reads.
+
+The setter also needs to keep working after rendering ends, when a click happens.
+It captures the component and slot, rather than relying on whichever component
+is currently rendering:
+
+```ts
+const setState = (action) => {
+  const previous = component.hooks[index]
+  const next = typeof action === 'function' ? action(previous) : action
+
+  if (Object.is(previous, next)) return
+
+  component.hooks[index] = next
+  component.rerender()
+}
+```
+
+Reading the slot at click time matters. A functional update should receive the
+latest stored state, not a value captured during an earlier render.
+
+Now the counter can own its state:
+
+```ts
+function Counter() {
+  const [count, setCount] = useState(0)
+
+  return createElement(
+    'button',
+    { onClick: () => setCount((n) => n + 1) },
+    `Count: ${count}`,
+  )
+}
+
+renderComponent(Counter, root)
+```
+
+A click changes a slot, reruns the function, and diffs its result against the
+saved tree. That's the first complete state-to-screen loop.
+
+## What about work that isn't describing UI?
+
+Updating the document title is a useful example. It depends on `count`, but it
+isn't part of the element tree the component returns.
+
+```ts
+useEffect(() => {
+  document.title = `Count: ${count}`
+}, [count])
+```
+
+I need to remember the previous dependencies, decide whether they've changed,
+and run the callback after the DOM update — not while the component is still
+building its description.
+
+So `useEffect` uses a hook slot too, but queues its work instead of immediately
+running it. The render loop gets one more stage:
+
+```ts
+updateElement(container, newNode, context.node)
+context.node = newNode
+
+const pendingEffects = context.pendingEffects.splice(0)
+pendingEffects.forEach((effect) => effect())
+```
+
+Saving the tree first matters because an effect can trigger another state
+update. That next render needs the new tree as its starting point. Emptying the
+queue before invoking callbacks keeps it separate from work queued by that next
+render.
+
+Dependencies are compared with `Object.is`. Before rerunning an effect, I call
+its previous cleanup. Cleanup on unmount is still unfinished, so this is only
+part of the lifecycle, not the whole React effect contract.
+
+## How do I supply a value without making it global?
+
+Context adds another kind of memory: a value supplied to a component's scope,
+with a default when nothing is supplied.
+
+```ts
+const ThemeContext = createContext<'light' | 'dark'>('light')
+
+function ThemeLabel() {
+  const theme = useContext(ThemeContext)
+  return createElement('p', {}, `Theme: ${theme}`)
+}
+```
+
+Each context has a unique symbol. A scope is a map from those symbols to values.
+To supply a value, I copy the parent map and override one entry:
+
+```ts
+const childValues = new Map(parentValues)
+childValues.set(context.id, value)
+```
+
+Copying matters: changing this scope shouldn't mutate values in its parent.
+`useContext` reads the supplied map, falling back to the context's default when
+the symbol isn't present.
+
+For now, I pass the scope explicitly at the root:
+
+```ts
+const scope = createProviderValues(new Map(), ThemeContext, 'dark')
+renderComponent(ThemeLabel, root, scope)
+```
+
+That implements the lookup and scope-copying pieces. It doesn't yet implement
+nested provider nodes or a nested component tree that carries those scopes.
+
+## Looking back at the starting point
+
+```text
+UI = f(state)
+```
+
+The equation still holds. The rest is machinery needed to keep using it:
+
+- **Element objects** describe the result without touching the DOM.
+- **The renderer** turns that description into browser nodes.
+- **The diff** updates nodes that are already there.
+- **Component records and hooks** keep memory between function calls.
+- **Effects** separate describing UI from work after an update.
+- **Context scopes** supply values without one shared mutable global.
+
+I didn't need to begin by implementing all of React. A tree and a first render
+were enough to expose the next problem. Solving that problem exposed another.
+That's the useful part of building this from scratch: the abstractions stop
+being a list of framework features and start having a reason to exist.
+
+There are still deliberate gaps: rendering is synchronous, children match by
+position, and there's no Fiber scheduler, JSX runtime, or nested component tree.
+This is a learning project in progress, not a React-compatible replacement.
