@@ -14,15 +14,15 @@
     "build:icons": "node scripts/build-icons.mjs"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^14.2.3",
-    "@astrojs/mdx": "^7.0.7",
+    "@astrojs/cloudflare": "^14.4.3",
+    "@astrojs/mdx": "^8.1.2",
     "@astrojs/rss": "^4.0.19",
-    "@astrojs/sitemap": "^3.7.3",
-    "@astrojs/svelte": "^9.0.1",
+    "@astrojs/sitemap": "^3.7.4",
+    "@astrojs/svelte": "^9.1.2",
     "@fontsource-variable/geist": "^5.3.0",
     "@fontsource-variable/geist-mono": "^5.3.0",
     "@tailwindcss/vite": "^4.3.3",
-    "astro": "^7.2.4",
+    "astro": "^7.4.4",
     "clsx": "^2.1.1",
     "simple-icons": "^16.27.1",
     "svelte": "^5.56.8",
@@ -30,7 +30,7 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.10",
+    "@astrojs/check": "^0.9.12",
     "@fontsource/inter": "^5.3.0",
     "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^24",
