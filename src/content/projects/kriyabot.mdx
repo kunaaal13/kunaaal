@@ -1,0 +1,202 @@
+---
+title: Kriyabot
+description: A team of always-on AI bots that run on the Claude Code or Codex subscription you already pay for, built on one Cloudflare Worker and its Durable Objects.
+status: building
+featured: true
+order: 1
+period:
+  start: '11.2026'
+tech: ['TypeScript', 'Cloudflare Workers', 'Durable Objects', 'Containers', 'D1', 'R2', 'ACP', 'MCP', 'Electron', 'React']
+links:
+  github: 'https://github.com/kunaaal13/kriyabot'
+---
+
+Kriyabot is a roster of AI bots you chat with. Each bot has its own role, memory,
+model, rules, routines and tools. One reads the news every morning and tells you
+what matters. Another watches a page for a price drop. Another is the coding bot
+you hand a task to before closing your laptop.
+
+The twist is where the thinking happens. A bot can run on an API model, but it
+can also run on **Claude Code or Codex** — the real, unmodified vendor CLIs, signed
+in with your own Claude or ChatGPT plan. So a bot that works all day costs you
+nothing on top of the subscription you already have.
+
+Most of what follows is about how one Cloudflare Worker makes that possible.
+
+## The shape of it
+
+There is no server to keep alive. The UI ships inside a desktop app, and the
+backend is a single Worker with a handful of Durable Objects — each one a tiny
+single-threaded process with its own SQLite database.
+
+```text
+Desktop app (Electron: the React UI + a local runner)
+   │  HTTPS /api  ·  WebSockets to the agents
+   ▼
+Worker "kriyabot"   (Hono API, auth, routing)
+   ├─ D1             users, invites, roles, limits, usage
+   ├─ UserHub DO     one per user: bots, engine logins, sealed API keys,
+   │                 MCP connections, skills, inbox, notifications
+   ├─ BotAgent DO    one per bot: event log, chats, memory, rules, routines
+   ├─ RoomAgent DO   one per room: a chat shared by several bots
+   ├─ Sandbox DO     one per user: a container where the CLIs run
+   ├─ RunnerHub DO   one per user: turns relayed to your own computer
+   ├─ AI Gateway  →  Workers AI · Anthropic · OpenAI · OpenRouter
+   └─ R2             attachments and large payloads, under u/<userId>/…
+```
+
+The rule that keeps it sane: **every piece of state has exactly one owner.**
+UserHub owns the roster and your secrets but never chat history. A BotAgent owns
+one bot's history but never an API key. The sandbox owns running processes and
+files on disk, and nothing else — the Durable Object is always the source of
+truth, so a container can die without losing anything.
+
+## A chat is an append-only log
+
+Every turn writes events to the bot's `events` table: a user message, text
+deltas, tool calls, approval cards, usage, done. Nothing is ever edited.
+
+```text
+seq  type        payload
+───  ──────────  ───────────────────────────────
+101  user_msg    "Summarise the logs"
+102  text        "Reading all of them"
+103  tool_start  file_read  { path: "app.log" }
+104  tool_end    …12k chars → R2, row keeps a ref
+105  text        "Two errors, both at 03:12"
+106  done
+```
+
+Messages, cards and usage are **projections** of that log, built by one pure
+function, `reduce(projection, event)`. The server folds events into SQLite
+tables; the desktop app folds the very same events into memory. A client that
+reconnects sends the last `seq` it saw and replays from there — there is no
+separate snapshot format to keep in sync, and replaying a turn reproduces it
+exactly. Swapping a bot's engine never changes its history.
+
+## One turn, end to end
+
+When you send a message to a bot on Claude Code, this is the path:
+
+```text
+You type in the desktop app
+   │
+   ▼
+BotAgent.send ─► append user_msg ─► claim the turn (monthly limits)
+   │
+   ▼
+build the turn: role + memory + skills + tool list
+   │
+   ├─ API engine ─► AI SDK through AI Gateway, tool loop in the DO
+   │
+   └─ CLI engine ─► Sandbox DO (cloud)  or  RunnerHub ─► your Mac
+                       │
+                       ▼
+               claude-agent-acp / codex-acp   (ACP over stdio)
+                       │
+                       ├─ session/update ───► events ─► every open tab
+                       ├─ permission ask ───► approval card
+                       └─ Kriyabot tools ───► /gw/mcp (turn token)
+```
+
+The CLIs speak **ACP**, the Agent Client Protocol: JSON-RPC over stdin and
+stdout. Kriyabot is the client. It opens or resumes the CLI's session, sets its
+permission mode, sends the prompt, and forwards every update into the event log.
+A lost session falls back to a new one primed with a budgeted summary of the chat.
+
+Kriyabot's own tools — memory, web fetch, the user's MCP servers, approvals —
+reach the CLI through an MCP gateway at `/gw/mcp`, authorised by a token minted
+for that one turn. The container itself holds no credentials beyond it.
+
+## Your laptop is a computer too
+
+The cloud sandbox is one place a CLI can run. The other is your own machine. The
+desktop app ships a runner that pairs with your account and takes turns over a
+WebSocket, using your own Claude and Codex logins and your own files.
+
+```text
+RunnerHub DO ◄──── WebSocket (outbound from the app) ────► Runner in the app
+   turn.start, turn.cancel, turn.steer                      spawns the ACP adapter
+   ◄── turn.event (seq 1, 2, 3…), permission.ask, turn.done
+   ──► turn.ack (seq)  ·  welcome { resume, drop }
+```
+
+Every turn message carries a `seq`. If the socket drops mid-turn, the CLI keeps
+working; on reconnect the hub says which turns it still waits on and from which
+`seq`, and the runner replays the gap exactly once.
+
+## Steering a running turn
+
+Typing while a bot is working queues the message. Pressing **Steer** used to stop
+the turn and run the message next. Now both ACP adapters support a steering
+extension, so the message goes straight into the running turn:
+
+```text
+queued message ─► BotAgent.steer
+                    ├─ CLI turn that can take it ─► _session/steering
+                    │      injected → the message joins the turn's log
+                    └─ otherwise ─► stop the turn, run the message next
+```
+
+The awkward part was the projection: a user message arriving while a reply is
+still streaming has to close that bubble first, or the rest of the reply lands in
+the wrong place.
+
+## Bots that work while you don't
+
+The point of a bot over a chat window is that it does things on its own.
+
+- **Routines** — a cron schedule, or a watch on a page that only wakes the model
+  when the content actually changes. Quiet hours, a daily push cap, and a choice
+  of what to do when a usage limit hits.
+- **Webhooks** — a URL per bot, optionally HMAC-signed, deduplicated for a day.
+- **Commitments** — "tell me when the refund lands": tracked outcomes a bot
+  checks on a schedule, with their own history.
+- **Desk cards** — a bot can leave a card in your inbox with a drafted action;
+  you approve it with one click.
+
+Bots also hand work to each other. `message_bot` returns at once with a task id;
+the other bot answers in its own background turn, and the answer comes back to
+the asking chat as a new message. Ask three bots in one reply and their answers
+arrive together.
+
+```text
+Writer ─ message_bot ─► Researcher        (task 7f3a, returns at once)
+Writer ─ message_bot ─► Fact-checker      (task 9c21)
+            …both work in the background…
+Writer ◄── one message with both answers ── fan-in, then Writer continues
+```
+
+## Approvals are data, not prompts
+
+Every tool has an effect (read, write, destructive) and an action class. A bot's
+rules are rows: allow, ask or block per class. A pure `decide()` picks the
+outcome; "ask" becomes an approval card in the chat, with Allow, Deny and Always.
+Background turns can't ask anyone, so their writes are blocked unless allowed.
+Three approvals in a row and Kriyabot offers to make it "Always".
+
+## Secrets
+
+API keys, MCP tokens and saved browser sign-ins are sealed with AES-GCM under a
+key derived per user (HKDF over a master key with the user id as salt), and each
+sealed value is bound to the row it was written for. A leaked row from one user
+can't be opened with another user's key, and rotating the master key re-seals
+everything as users come back.
+
+## What the code looks like
+
+The design is data-oriented: schemas are the source of truth, and engines, tools,
+rules and routines are rows. Domain logic lives in small packages — `chat`,
+`engines`, `rules`, `routines`, `tools`, `vault`, `rooms` and friends — each with
+pure files that import nothing that does I/O, and effectful files at the edges.
+The Durable Object classes stay thin: load rows, call the pure functions,
+append, persist.
+
+The desktop UI follows Feature-Sliced Design on React with TanStack Router and
+Base UI, and colour themes derive every token from five base colours.
+
+## What's next
+
+Connectors for everyday apps — Gmail, Calendar, Drive and Shopify — so bots are
+useful outside code; a way to reach your bots away from the desk; and run
+history for routines.
