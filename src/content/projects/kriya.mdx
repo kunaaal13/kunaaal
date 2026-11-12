@@ -1,5 +1,5 @@
 ---
-title: Kriyabot
+title: Kriya
 description: A team of always-on AI bots that run on the Claude Code or Codex subscription you already pay for, built on one Cloudflare Worker and its Durable Objects.
 status: building
 featured: true
@@ -11,7 +11,7 @@ links:
   github: 'https://github.com/kunaaal13/kriyabot'
 ---
 
-Kriyabot is a roster of AI bots you chat with. Each bot has its own role, memory,
+Kriya is a roster of AI bots you chat with. Each bot has its own role, memory,
 model, rules, routines and tools. One reads the news every morning and tells you
 what matters. Another watches a page for a price drop. Another is the coding bot
 you hand a task to before closing your laptop.
@@ -96,15 +96,15 @@ build the turn: role + memory + skills + tool list
                        │
                        ├─ session/update ───► events ─► every open tab
                        ├─ permission ask ───► approval card
-                       └─ Kriyabot tools ───► /gw/mcp (turn token)
+                       └─ Kriya tools ──────► /gw/mcp (turn token)
 ```
 
 The CLIs speak **ACP**, the Agent Client Protocol: JSON-RPC over stdin and
-stdout. Kriyabot is the client. It opens or resumes the CLI's session, sets its
+stdout. Kriya is the client. It opens or resumes the CLI's session, sets its
 permission mode, sends the prompt, and forwards every update into the event log.
 A lost session falls back to a new one primed with a budgeted summary of the chat.
 
-Kriyabot's own tools — memory, web fetch, the user's MCP servers, approvals —
+Kriya's own tools — memory, web fetch, the user's MCP servers, approvals —
 reach the CLI through an MCP gateway at `/gw/mcp`, authorised by a token minted
 for that one turn. The container itself holds no credentials beyond it.
 
@@ -173,7 +173,7 @@ Every tool has an effect (read, write, destructive) and an action class. A bot's
 rules are rows: allow, ask or block per class. A pure `decide()` picks the
 outcome; "ask" becomes an approval card in the chat, with Allow, Deny and Always.
 Background turns can't ask anyone, so their writes are blocked unless allowed.
-Three approvals in a row and Kriyabot offers to make it "Always".
+Three approvals in a row and Kriya offers to make it "Always".
 
 ## Secrets
 
