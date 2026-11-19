@@ -1,11 +1,13 @@
 import { readFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import satori from 'satori'
-import { Resvg } from '@resvg/resvg-js'
 import { SITE } from '@/shared/config/site'
 import { PROFILE } from '@/entities/profile'
 
 const require = createRequire(import.meta.url)
+// Load native rasterisation through Node, not Vite's dependency optimizer.
+// Bundling this package makes Rolldown try to parse its .node binary as JS.
+const { Resvg } = require('@resvg/resvg-js') as typeof import('@resvg/resvg-js')
 
 export const OG_SIZE = { width: 1200, height: 630 }
 
